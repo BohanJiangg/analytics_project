@@ -1,0 +1,32 @@
+---
+title: "World Happiness Project"
+output: html_notebook
+---
+
+
+```{r}
+# Install SQLite lib
+install.packages("RSQLite")
+```
+
+```{r}
+# Load lib and get connection
+library(RSQLite)
+conn <- dbConnect(SQLite(), './world_development_indicators/database.sqlite')
+dbListTables(conn)
+```
+```{r}
+# List all fields in Country table
+dbListFields(conn, "Country")
+```
+
+
+```{r}
+# query db and save results to dataframe
+country_names <- dbGetQuery(conn, "SELECT ShortName from Country")
+
+country_names
+```
+
+
+
