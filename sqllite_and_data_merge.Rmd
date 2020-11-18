@@ -29,4 +29,11 @@ country_names
 ```
 
 
+```{r}
+
+con <- dbConnect(drv=RSQLite::SQLite(), dbname='./world_development_indicators/database.sqlite')
+dbListTables(con)
+```
+
+
 
