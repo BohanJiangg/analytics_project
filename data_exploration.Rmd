@@ -1,11 +1,17 @@
 ---
-title: "Spotify Data Analysis"
+title: "Spotify Data Analysis and Descriptive Statistics"
 output: html_notebook
 author: CS Duals
 date: November 18, 2020
 ---
 
 
+```{r}
+options(repr.matrix.max.rows=100, repr.matrix.max.cols=20)
+```
+
+
+Import all Libraries
 ```{r}
 # Libraries
 options(warn=-1)
@@ -16,19 +22,126 @@ library(hrbrthemes)
 library(forecast)
 library(xts)
 library(Metrics)
+library(psych)
+library(dygraphs)
+library(GGally)
+library(tidyverse)
+library(tidyquant)  
+library(cranlogs)   
+library(corrr)      
+library(cowplot)    
 ```
 
 
 ```{r}
-
-
+#Import Data into DF
+df = read.csv(file='./data/data.csv')
+df_genre = read.csv(file='./data/data_by_genres.csv')
+df_artist = read.csv(file='./data/data_by_artist.csv')
+df_year = read.csv(file='./data/data_by_year.csv')
+df_genres2 = read.csv(file='./data/data_w_genres.csv')
 ```
 
 
 ```{r}
+# Preview DF
+head(df)
+head(df_genre)
+head(df_artist)
+head(df_year)
+head(df_genres2)
+
+```
+Data Cleaning
+```{r}
+# Take only unique rows - remove duplicates
+df <- df %>% distinct()
+
+# Remove null rows in R
+df <- df[rowSums(is.na(df)) == 0,]
+
+# Change year column to a date value
+df$year <- as.Date(ISOdate(df$year, 1, 1))
+```
+
+
+Data Summary
+```{r}
+# Get summary of main dataframe
+
+# Data Dimensions
+dim(df)
+# Column names, column types, preview of data
+str(df)
+# Statistical summary of every column
+summary(df)
+# Print all column names
+colnames(df)
+
+```
+
+Correlation Plot of numeric Features
+```{r}
+# Nice visualization of correlations
+numerics = df[,!(colnames(df)  %in% c("id","year","artists","name","release_date"))]
+tidyverse_static_correlations <- numerics %>% correlate() 
+print.data.frame(tidyverse_static_correlations)
+
+```
+
+```{r}
+# Correlation Plot
+correlations = cor(numerics)
+ggcorr(numerics, method = c("everything", "pearson")) 
+
+```
+```{r}
+# Network plot
+# To interpret this plot, variables that are more highly correlated appear closer together and are joined by stronger paths. Paths are colored by their
+# sign (positive = blue, red = negative).
+net_plot <- tidyverse_static_correlations %>%
+    network_plot(colours = c("indianred2", "black", "skyblue1"),repel=TRUE, legend = TRUE) +
+    labs(
+        title = "Network Plot of Correlations of Numeric Features of Spotify Songs"
+        ) +
+    expand_limits(x = c(-0.75, 0.25), y = c(-0.4, 0.4)) +
+    theme_tq() +
+    theme(legend.position = "right")
+net_plot
+
+```
+5-year rolling correlation of each numeric factor over time
+---Work-in-Progress---
+
+```{r}
+# Get rolling correlations
+tidyverse_rolling_corr <- df %>%
+    # Data wrangling
+    select(year, energy, loudness) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = energy,
+        y          = loudness,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+tidyverse_rolling_corr
 ```
 
 
 ```{r}
-```
+#Time-Series Analysis
+#duration_ts <- ts(df_year$duration_ms,start=df_year$year)
+colnames(df_year)
+subset_year <- df_year[,!(colnames(df_year)  %in% c("key", "mode", "duration_ms"))]
 
+dygraph(subset_year, main = "Song Features Over Time") %>%
+  dySeries("tempo", axis = 'y2', label='Tempo') %>%
+  dySeries("popularity", axis = 'y2', label='Popularity') %>%
+  dySeries("loudness", axis = 'y2', label='loudness') %>%
+  dyCSS("legend.css")
+```
