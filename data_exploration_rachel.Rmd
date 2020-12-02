@@ -1,0 +1,477 @@
+---
+title: "Spotify Data Analysis and Descriptive Statistics"
+output: html_notebook
+author: CS Duals
+date: November 18, 2020
+---
+
+
+```{r}
+options(repr.matrix.max.rows=100, repr.matrix.max.cols=20)
+```
+
+
+Import all Libraries
+```{r}
+# Libraries
+options(warn=-1)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(hrbrthemes)
+library(forecast)
+library(xts)
+library(Metrics)
+library(psych)
+library(dygraphs)
+library(GGally)
+library(tidyverse)
+library(tidyquant)  
+library(cranlogs)   
+library(corrr)      
+library(cowplot)    
+```
+
+
+```{r}
+#Import Data into DF
+df = read.csv(file='./data/data.csv')
+df_genre = read.csv(file='./data/data_by_genres.csv')
+df_artist = read.csv(file='./data/data_by_artist.csv')
+df_year = read.csv(file='./data/data_by_year.csv')
+df_genres2 = read.csv(file='./data/data_w_genres.csv')
+```
+
+
+```{r}
+# Preview DF
+head(df)
+head(df_genre)
+head(df_artist)
+head(df_year)
+head(df_genres2)
+```
+Data Cleaning
+```{r}
+# Take only unique rows - remove duplicates
+df <- df %>% distinct()
+
+# Remove null rows in R
+df <- df[rowSums(is.na(df)) == 0,]
+
+# Change year column to a date value
+df$year <- as.Date(ISOdate(df$year, 1, 1))
+```
+
+
+Data Summary
+```{r}
+# Get summary of main dataframe
+
+# Data Dimensions
+dim(df)
+# Column names, column types, preview of data
+str(df)
+# Statistical summary of every column
+summary(df)
+# Print all column names
+colnames(df)
+
+```
+
+Correlation Plot of numeric Features
+```{r}
+# Nice visualization of correlations
+numerics = df[,!(colnames(df)  %in% c("id","year","artists","name","release_date"))]
+tidyverse_static_correlations <- numerics %>% correlate() 
+print.data.frame(tidyverse_static_correlations)
+
+```
+
+```{r}
+# Correlation Plot
+correlations = cor(numerics)
+ggcorr(numerics, method = c("everything", "pearson")) 
+```
+
+```{r}
+# Network plot
+# To interpret this plot, variables that are more highly correlated appear closer together and are joined by stronger paths. Paths are colored by their
+# sign (positive = blue, red = negative).
+net_plot <- tidyverse_static_correlations %>%
+    network_plot(colours = c("indianred2", "black", "skyblue1"),repel=TRUE, legend = TRUE) +
+    labs(
+        title = "Network Plot of Correlations of Numeric Features of Spotify Songs"
+        ) +
+    expand_limits(x = c(-0.75, 0.25), y = c(-0.4, 0.4)) +
+    theme_tq() +
+    theme(legend.position = "right")
+net_plot
+
+```
+5-year rolling correlation of each numeric factor over time
+---Work-in-Progress---
+
+```{r}
+# Get rolling correlations
+tidyverse_rolling_corr <- df %>%
+    # Data wrangling
+    select(year, energy, loudness) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = energy,
+        y          = loudness,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+tidyverse_rolling_corr
+```
+
+
+```{r}
+#Time-Series Analysis
+#duration_ts <- ts(df_year$duration_ms,start=df_year$year)
+colnames(df_year)
+subset_year <- df_year[,!(colnames(df_year)  %in% c("key", "mode", "duration_ms"))]
+dygraph(subset_year, main = "Song Features Over Time") %>%
+  dySeries("tempo", axis = 'y2', label='Tempo') %>%
+  dySeries("popularity", axis = 'y2', label='Popularity') %>%
+  dySeries("loudness", axis = 'y2', label='loudness') %>%
+  dyCSS("legend.css")
+```
+
+Occurrence of Explicit Data
+```{r}
+df_split_explicit <- split(df, df$explicit)
+df_explicit <-df_split_explicit$'1'
+df_nonexplicit <- df_split_explicit$'0'
+
+explicitCountPerYear <- aggregate(df_explicit$explicit, by=list(df_explicit$year), FUN=length)
+explicitCountPerYear$Group.1 <- substr(explicitCountPerYear$Group.1, 1,4)
+explicitTs <- ts(explicitCountPerYear$x, start=c(explicitCountPerYear$Group.1[1]))
+
+dygraph(explicitTs, main = "Explicit Songs Over Time") %>%
+  dyCSS("legend.css")
+
+nonExplicitCountPerYear <- aggregate(df_nonexplicit$explicit, by=list(df_nonexplicit$year), FUN=length)
+nonExplicitCountPerYear$Group.1 <- substr(nonExplicitCountPerYear$Group.1, 1,4)
+nonExplicitTs <- ts(nonExplicitCountPerYear$x, start=c(nonExplicitCountPerYear$Group.1[1]))
+
+dygraph(nonExplicitTs, main = "Non-Explicit Songs Over Time") %>%
+  dyCSS("legend.css")
+```
+
+
+Occurrence of Minor/Major Data
+```{r}
+df_split_mode <- split(df, df$mode)
+df_major <-df_split_mode$'1'
+df_minor <- df_split_mode$'0'
+
+majorCountPerYear <- aggregate(df_major$mode, by=list(df_major$year), FUN=length)
+majorCountPerYear$Group.1 <- substr(majorCountPerYear$Group.1, 1,4)
+majorTs <- ts(majorCountPerYear$x, start=c(majorCountPerYear$Group.1[1]))
+
+dygraph(majorTs, main = "Songs In Major Over Time") %>%
+  dyCSS("legend.css")
+
+minorCountPerYear <- aggregate(df_minor$mode, by=list(df_minor$year), FUN=length)
+minorCountPerYear$Group.1 <- substr(minorCountPerYear$Group.1, 1,4)
+minorTs <- ts(minorCountPerYear$x, start=c(minorCountPerYear$Group.1[1]))
+
+dygraph(minorTs, main = "Songs In Minor Over Time") %>%
+  dyCSS("legend.css")
+```
+
+PROOF OF FEATURE IMPORTANCE
+```{r}
+#Valence
+valence_overall <- aggregate(list(Valence = df[,18]), list(Year = df$year), median)
+valence_overall$Year <- substr(valence_overall$Year, 1,4)
+valence_popular <- df %>% arrange(desc(year), desc(popularity)) %>% group_by(year) %>% slice(seq(n()*.1))
+valence_popular <- subset(valence_popular, select = c("popularity", "valence","year"))
+valence_popular <- aggregate(list(Valence = valence_popular[,2]), list(Year = valence_popular$year), median)
+startYear = valence_overall$Year[1]
+valence_overall_ts <- ts(valence_overall$Valence, start = c(startYear))
+valence_popular_ts <- ts(valence_popular$valence, start = c(startYear))
+valence <- cbind(valence_overall_ts, valence_popular_ts)
+dygraph(valence, main="Valence Over Time") %>%
+  dySeries("valence_overall_ts", axis = 'y', label='Overall') %>%
+  dySeries("valence_popular_ts", axis = 'y', label='Most Popular') %>%
+  dyCSS("legend.css")
+valence_mape <- mape(valence_overall_ts, valence_popular_ts)
+valence_rmse <- rmse(valence_overall_ts, valence_popular_ts)
+valence_rolling_corr <- df %>%
+    # Data wrangling
+    select(year, valence, popularity) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = popularity,
+        y          = valence,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+valence_rolling_corr
+
+cat("\nValence MAPE: ", valence_mape, "\n")
+cat("Valence RMSE: ", valence_rmse, "\n")
+cat("Valence Correlation: ", cor(df$valence, df$popularity), "\n")
+
+#Tempo
+tempo_overall <- aggregate(list(Tempo = df[,17]), list(Year = df$year), median)
+tempo_overall$Year <- substr(tempo_overall$Year, 1,4)
+tempo_popular <- df %>% arrange(desc(year), desc(popularity)) %>% group_by(year) %>% slice(seq(n()*.1))
+tempo_popular <- subset(tempo_popular, select = c("popularity", "tempo","year"))
+tempo_popular <- aggregate(list(Tempo = tempo_popular[,2]), list(Year = tempo_popular$year), median)
+
+startYear = tempo_overall$Year[1]
+tempo_overall_ts <- ts(tempo_overall$Tempo, start = c(startYear))
+tempo_popular_ts <- ts(tempo_popular$tempo, start = c(startYear))
+
+tempo <- cbind(tempo_overall_ts, tempo_popular_ts)
+dygraph(tempo, main="Tempo Over Time") %>%
+  dySeries("tempo_overall_ts", axis = 'y', label='Overall') %>%
+  dySeries("tempo_popular_ts", axis = 'y', label='Most Popular') %>%
+  dyCSS("legend.css")
+
+tempo_mape <- mape(tempo_overall_ts, tempo_popular_ts)
+tempo_rmse <- rmse(tempo_overall_ts, tempo_popular_ts)
+tempo_rolling_cor <- df %>%
+    # Data wrangling
+    select(year, tempo, popularity) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = popularity,
+        y          = tempo,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+tempo_rolling_cor
+cat("\nTempo MAPE: ", tempo_mape, "\n")
+cat("Tempo RMSE: ", tempo_rmse, "\n")
+cat("Tempo Correlation: ", cor(df$tempo, df$popularity), "\n")
+
+#Liveness
+liveness_overall <- aggregate(list(Liveness = df[,10]), list(Year = df$year), median)
+liveness_overall$Year <- substr(liveness_overall$Year, 1,4)
+liveness_popular <- df %>% arrange(desc(year), desc(popularity)) %>% group_by(year) %>% slice(seq(n()*.1))
+liveness_popular <- subset(liveness_popular, select = c("popularity", "liveness","year"))
+liveness_popular <- aggregate(list(Liveness = liveness_popular[,2]), list(Year = liveness_popular$year), median)
+
+startYear = liveness_overall$Year[1]
+liveness_overall_ts <- ts(liveness_overall$Liveness, start = c(startYear))
+liveness_popular_ts <- ts(liveness_popular$liveness, start = c(startYear))
+
+liveness <- cbind(liveness_overall_ts, liveness_popular_ts)
+dygraph(liveness, main="Liveness Over Time") %>%
+  dySeries("liveness_overall_ts", axis = 'y', label='Overall') %>%
+  dySeries("liveness_popular_ts", axis = 'y', label='Most Popular') %>%
+  dyCSS("legend.css")
+
+liveness_mape <- mape(liveness_overall_ts, liveness_popular_ts)
+liveness_rmse <- rmse(liveness_overall_ts, liveness_popular_ts)
+liveness_rolling_cor <- df %>%
+    # Data wrangling
+    select(year, liveness, popularity) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = popularity,
+        y          = liveness,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+liveness_rolling_cor
+cat("\nLiveness MAPE: ", liveness_mape, "\n")
+cat("Liveness RMSE: ", liveness_rmse, "\n")
+cat("Liveness Correlation: ", cor(df$liveness, df$popularity), "\n")
+
+#Loudness
+loudness_overall <- aggregate(list(Loudness = df[,11]), list(Year = df$year), median)
+loudness_overall$Year <- substr(loudness_overall$Year, 1,4)
+loudness_popular <- df %>% arrange(desc(year), desc(popularity)) %>% group_by(year) %>% slice(seq(n()*.1))
+loudness_popular <- subset(loudness_popular, select = c("popularity", "loudness","year"))
+loudness_popular <- aggregate(list(Loudness = loudness_popular[,2]), list(Year = loudness_popular$year), median)
+
+startYear = loudness_overall$Year[1]
+loudness_overall_ts <- ts(loudness_overall$Loudness, start = c(startYear))
+loudness_popular_ts <- ts(loudness_popular$loudness, start = c(startYear))
+
+loudness <- cbind(loudness_overall_ts, loudness_popular_ts)
+dygraph(loudness, main="Loudness Over Time") %>%
+  dySeries("loudness_overall_ts", axis = 'y', label='Overall') %>%
+  dySeries("loudness_popular_ts", axis = 'y', label='Most Popular') %>%
+  dyCSS("legend.css")
+
+loudness_mape <- mape(loudness_overall_ts, loudness_popular_ts)
+loudness_rmse <- rmse(loudness_overall_ts, loudness_popular_ts)
+loudness_rolling_cor <- df %>%
+    # Data wrangling
+    select(year, loudness, popularity) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = popularity,
+        y          = loudness,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+loudness_rolling_cor
+cat("\nLoudness MAPE: ", loudness_mape, "\n")
+cat("Loudness RMSE: ", loudness_rmse, "\n")
+cat("Loudness Correlation: ", cor(df$loudness, df$popularity), "\n")
+
+#Speechiness
+speechiness_overall <- aggregate(list(Speechiness = df[,16]), list(Year = df$year), median)
+speechiness_overall$Year <- substr(speechiness_overall$Year, 1,4)
+speechiness_popular <- df %>% arrange(desc(year), desc(popularity)) %>% group_by(year) %>% slice(seq(n()*.1))
+speechiness_popular <- subset(speechiness_popular, select = c("popularity", "speechiness","year"))
+speechiness_popular <- aggregate(list(Speechiness = speechiness_popular[,2]), list(Year = speechiness_popular$year), median)
+
+startYear = speechiness_overall$Year[1]
+speechiness_overall_ts <- ts(speechiness_overall$Speechiness, start = c(startYear))
+speechiness_popular_ts <- ts(speechiness_popular$speechiness, start = c(startYear))
+
+speechiness <- cbind(speechiness_overall_ts, speechiness_popular_ts)
+dygraph(speechiness, main="Speechiness Over Time") %>%
+  dySeries("speechiness_overall_ts", axis = 'y', label='Overall') %>%
+  dySeries("speechiness_popular_ts", axis = 'y', label='Most Popular') %>%
+  dyCSS("legend.css")
+
+speechiness_mape <- mape(speechiness_overall_ts, speechiness_popular_ts)
+speechiness_rmse <- rmse(speechiness_overall_ts, speechiness_popular_ts)
+speechiness_rolling_cor <- df %>%
+    # Data wrangling
+    select(year, speechiness, popularity) %>%
+    # Mutation
+    tq_mutate_xy(
+        x          = popularity,
+        y          = speechiness,
+        mutate_fun = runCor, 
+        # runCor args
+        n          = 30,
+        use        = "pairwise.complete.obs",
+        # tq_mutate args
+        col_rename = "rolling_corr"
+    )
+speechiness_rolling_cor
+cat("\nSpeechiness MAPE: ", speechiness_mape, "\n")
+cat("Speechiness RMSE: ", speechiness_rmse, "\n")
+cat("Speechiness Correlation: ", cor(df$speechiness, df$popularity), "\n")
+```
+
+Linear Regression Models
+```{r}
+#Training and Testing Amounts
+training.percent = 0.75
+numOfYears <- 100
+nTrain <- round(numOfYears*training.percent)
+nTest <- round(numOfYears - nTrain)
+
+#Valence
+valence_train <- subset(valence_overall_ts, start = 1, end = nTrain)
+valence_test <- subset(valence_overall_ts, start = nTrain+1, end = nTrain+nTest)
+valence_regModel <- tslm(valence_train ~ trend)
+valence_test_predict <- forecast(valence_regModel,h=nTest)
+
+plot(valence_overall_ts)
+lines(valence_test_predict$mean, col=2)
+legend("topleft", lty=1, col=c(1,2), legend=c("Actual", "Predicted"))
+
+#Tempo
+tempo_train <- subset(tempo_overall_ts, start = 1, end = nTrain)
+tempo_test <- subset(tempo_overall_ts, start = nTrain+1, end = nTrain+nTest)
+tempo_regModel <- tslm(tempo_train ~ trend)
+tempo_test_predict <- forecast(tempo_regModel,h=nTest)
+
+plot(tempo_overall_ts)
+lines(tempo_test_predict$mean, col=2)
+legend("topleft", lty=1, col=c(1,2), legend=c("Actual", "Predicted"))
+
+#Liveness
+liveness_train <- subset(liveness_overall_ts, start = 1, end = nTrain)
+liveness_test <- subset(liveness_overall_ts, start = nTrain+1, end = nTrain+nTest)
+liveness_regModel <- tslm(liveness_train ~ trend)
+liveness_test_predict <- forecast(liveness_regModel,h=nTest)
+
+plot(liveness_overall_ts)
+lines(liveness_test_predict$mean, col=2)
+legend("topleft", lty=1, col=c(1,2), legend=c("Actual", "Predicted"))
+
+#Loudness
+loudness_train <- subset(loudness_overall_ts, start = 1, end = nTrain)
+loudness_test <- subset(loudness_overall_ts, start = nTrain+1, end = nTrain+nTest)
+loudness_regModel <- tslm(loudness_train ~ trend)
+loudness_test_predict <- forecast(loudness_regModel,h=nTest)
+
+plot(loudness_overall_ts)
+lines(loudness_test_predict$mean, col=2)
+legend("topleft", lty=1, col=c(1,2), legend=c("Actual", "Predicted"))
+
+#Speechiness
+speechiness_train <- subset(speechiness_overall_ts, start = 1, end = nTrain)
+speechiness_test <- subset(speechiness_overall_ts, start = nTrain+1, end = nTrain+nTest)
+speechiness_regModel <- tslm(speechiness_train ~ trend)
+speechiness_test_predict <- forecast(speechiness_regModel,h=nTest)
+
+plot(speechiness_overall_ts)
+lines(speechiness_test_predict$mean, col=2)
+legend("topleft", lty=1, col=c(1,2), legend=c("Actual", "Predicted"))
+```
+
+
+ARIMA Models
+```{r}
+#Valence
+valence_arima <- auto.arima(valence_overall_ts)
+valence_arima_fcast <- forecast (valence_arima)
+print("Valence: \n")
+summary (valence_arima)
+plot (valence_arima_fcast)
+
+#Tempo
+tempo_arima <- auto.arima(tempo_overall_ts)
+tempo_arima_fcast <- forecast (tempo_arima)
+print("Tempo: \n")
+summary (tempo_arima)
+plot (tempo_arima_fcast)
+
+#Liveness
+liveness_arima <- auto.arima(liveness_overall_ts)
+liveness_arima_fcast <- forecast (liveness_arima)
+print("Liveness: \n")
+summary (liveness_arima)
+plot (liveness_arima_fcast)
+
+#Loudness
+loudness_arima <- auto.arima(loudness_overall_ts)
+loudness_arima_fcast <- forecast (loudness_arima)
+print("Loudness: \n")
+summary (loudness_arima)
+plot (loudness_arima_fcast)
+
+#Speechiness
+speechiness_arima <- auto.arima(speechiness_overall_ts)
+speechiness_arima_fcast <- forecast (speechiness_arima)
+print("Speechiness: \n")
+summary (speechiness_arima)
+plot (speechiness_arima_fcast)
+```
