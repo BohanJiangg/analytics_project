@@ -84,16 +84,13 @@ head(df_genre)
 head(df_artist)
 head(df_year)
 head(df_genres2)
-
 ```
 Data Cleaning
 ```{r}
 # Take only unique rows - remove duplicates
 df <- df %>% distinct()
-
 # Remove null rows in R
 df <- df[rowSums(is.na(df)) == 0,]
-
 # Change year column to a date value
 df$year <- as.Date(ISOdate(df$year, 1, 1))
 ```
@@ -102,7 +99,6 @@ df$year <- as.Date(ISOdate(df$year, 1, 1))
 Data Summary
 ```{r}
 # Get summary of main dataframe
-
 # Data Dimensions
 dim(df)
 # Column names, column types, preview of data
@@ -111,7 +107,6 @@ str(df)
 summary(df)
 # Print all column names
 colnames(df)
-
 ```
 
 Correlation Plot of numeric Features
@@ -120,14 +115,12 @@ Correlation Plot of numeric Features
 numerics = df[,!(colnames(df)  %in% c("id","year","artists","name","release_date"))]
 tidyverse_static_correlations <- numerics %>% correlate() 
 print.data.frame(tidyverse_static_correlations)
-
 ```
 
 ```{r}
 # Correlation Plot
 correlations = cor(numerics)
 ggcorr(numerics, method = c("everything", "pearson")) 
-
 ```
 ```{r}
 # Network plot
@@ -142,7 +135,6 @@ net_plot <- tidyverse_static_correlations %>%
     theme_tq() +
     theme(legend.position = "right")
 net_plot
-
 ```
 5-year rolling correlation of each numeric factor over time
 ---Work-in-Progress---
@@ -172,7 +164,6 @@ tidyverse_rolling_corr
 #duration_ts <- ts(df_year$duration_ms,start=df_year$year)
 colnames(df_year)
 subset_year <- df_year[,!(colnames(df_year)  %in% c("key", "mode", "duration_ms"))]
-
 dygraph(subset_year, main = "Song Features Over Time") %>%
   dySeries("tempo", axis = 'y2', label='Tempo') %>%
   dySeries("popularity", axis = 'y2', label='Popularity') %>%
