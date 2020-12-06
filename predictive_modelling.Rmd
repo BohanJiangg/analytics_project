@@ -1,0 +1,911 @@
+---
+title: "Spotify - Music of the Future"
+output: html_notebook
+author: Rachel Liu, Bohan Jiang, Dapo Folami, Justin Li
+team: Team 4 - CS Duals
+date: December 4, 2020
+---
+
+##### *Note that it may take a significant amount of time and processing power to run this entire notebook, due to the number of models trained.* 
+
+Install all necessary packages before running this notebook. 
+```{r}
+# Install all necessary packages
+pkgs = c("ggplot2", "dplyr", "plotly","hrbrthemes","forecast","xts","Metrics","psych","dygraphs","GGally","tidyverse","tidyquant","cranlogs","corrr","cowplot","gplots","plm","lubridate","fastDummies","randomForest","randomForest","doParallel","caret","neuralnet","xgboost","h2o","readr","plyr","formattable","RWeka","qdap","tm","magrittr","corrplot","treemap","viridisLite","factoextra","gridExtra","kableExtra", "smooth")
+install.packages(pkgs)
+```
+
+Import all required libraries to run this notebook.
+```{r}
+# Libraries
+options(warn=-1)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(hrbrthemes)
+library(forecast)
+library(xts)
+library(Metrics)
+library(psych)
+library(dygraphs)
+library(GGally)
+library(tidyverse)
+library(tidyquant)  
+library(cranlogs)   
+library(corrr)      
+library(cowplot)   
+library(gplots)
+library(plm)
+library(lubridate)
+library(fastDummies)
+library(randomForest)
+library(doParallel) 
+library(caret)
+library(neuralnet)
+library(xgboost)
+library(h2o)
+library(readr)
+library(plyr)
+library(formattable)
+library(RWeka)
+library(qdap)
+library(tm)
+library(magrittr)
+library(corrplot)
+library(treemap)
+library(viridisLite)
+library(factoextra)
+library(gridExtra)
+library(kableExtra)
+library(smooth)
+```
+
+Change display options when printing matrices. 
+```{r}
+options(repr.matrix.max.rows=100, repr.matrix.max.cols=20)
+```
+
+## **Data Import, Summary and Cleaning**
+
+
+#### Import all datasets into dataframes.
+```{r}
+#Import datasets into DFs
+
+# This is the main dataset that contains all unique songs 
+df = read.csv(file='./data/data.csv')
+
+# Dataset that groups songs by genres
+df_genre = read.csv(file='./data/data_by_genres.csv')
+
+# Dataset that groups songs by artist
+df_artist = read.csv(file='./data/data_by_artist.csv')
+
+# Dataset that groups songs by year
+df_year = read.csv(file='./data/data_by_year.csv')
+
+# Dataset that group songs by artist and genre 
+df_genres2 = read.csv(file='./data/data_w_genres.csv')
+```
+
+
+```{r}
+# Preview all DFs
+head(df)
+head(df_genre)
+head(df_artist)
+head(df_year)
+head(df_genres2)
+```
+
+
+#### Data Cleaning
+```{r}
+# Take only unique rows - remove duplicates
+df <- df %>% distinct()
+df_genre <- df_genre %>% distinct()
+df_artist <- df_artist %>% distinct()
+df_year <- df_year %>% distinct()
+df_genres2 <- df_genres2 %>% distinct()
+
+# Remove null rows in R
+df <- df[rowSums(is.na(df)) == 0,]
+df_genre <- df_genre[rowSums(is.na(df_genre)) == 0,]
+df_artist <- df_artist[rowSums(is.na(df_artist)) == 0,]
+df_year <- df_year[rowSums(is.na(df_year)) == 0,]
+df_genres2 <- df_genres2[rowSums(is.na(df_genres2)) == 0,]
+
+# Change year column to a double value for df and df_year
+df$year <- as.Date(as.character(df$year), format = "%Y")
+df$year = lubridate::year(df$year)
+
+df_year$year <- as.Date(as.character(df_year$year), format = "%Y")
+df_year$year = lubridate::year(df_year$year)
+head(df)
+head(df_year)
+```
+
+
+#### Data Summary of all Datasets
+```{r}
+# Get summary of main dataframe
+
+# Data Dimensions, Column names, column types, preview of data
+glimpse(df)
+# Statistical summary of every column
+summary(df)
+# Print all column names
+colnames(df)
+```
+
+```{r}
+# Get summary of dataframe by year
+
+# Data Dimensions, Column names, column types, preview of data
+glimpse(df_year)
+# Statistical summary of every column
+summary(df_year)
+# Print all column names
+colnames(df_year)
+```
+
+```{r}
+# Get summary of dataframe by genre
+
+# Data Dimensions, Column names, column types, preview of data
+glimpse(df_genre)
+# Statistical summary of every column
+summary(df_genre)
+# Print all column names
+colnames(df_genre)
+```
+
+```{r}
+# Get summary of dataframe by artist
+
+# Data Dimensions, Column names, column types, preview of data
+glimpse(df_artist)
+# Statistical summary of every column
+summary(df_artist)
+# Print all column names
+colnames(df_artist)
+```
+
+```{r}
+# Get summary of dataframe by genre and artist
+
+# Data Dimensions, Column names, column types, preview of data
+glimpse(df_genres2)
+# Statistical summary of every column
+summary(df_genres2)
+# Print all column names
+colnames(df_genres2)
+```
+
+## **Data Analysis** 
+
+#### Look at distribution of data in the main dataset
+```{r}
+# Histogram of all numeric features
+df %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram()
+```
+
+```{r}
+# Density plot of all numeric features
+df %>%
+  keep(is.numeric) %>%                     
+  gather() %>%                             
+  ggplot(aes(value)) +                     
+    facet_wrap(~ key, scales = "free") +   
+    geom_density() 
+```
+
+Look at distribution of our key variable of interest, popularity
+```{r}
+popular_df <- data.frame(x = df$popularity)
+Log_pol <- popular_df %>%
+  ggplot(aes(x=x, fill = '#AA66FF'))+
+  labs(title = "Density plot of Popularity", x = "Popularity", y = "Density")+
+  geom_histogram(aes(y=..density..), color = 'black', fill='#AA66FF')+
+  geom_density(aes(y=..density..),color = 'black',fill = 'grey',  alpha = 0.5,  kernel='gaussian')+
+  geom_vline(aes(xintercept = mean(x)),color = 'red', linetype = 'dashed')+
+  geom_vline(aes(xintercept = median(x)),color = 'blue', linetype = 'dashed')+
+  geom_vline(aes(xintercept = quantile(x, probs = 0.25)),color = 'black')+
+  geom_vline(aes(xintercept = quantile(x, probs = 0.75)),color = 'black')+
+  theme_minimal()
+
+Log_pol
+
+```
+
+
+Look at overlapping distribution of key features in a 0 - 1 continuous scale
+```{r}
+correlated_density <- ggplot(df) +
+    geom_density(aes(energy, fill ="energy", alpha = 0.1)) + 
+    geom_density(aes(valence, fill ="valence", alpha = 0.1)) + 
+    geom_density(aes(danceability, fill ="danceability", alpha = 0.1)) +
+   geom_density(aes(acousticness, fill ="acousticness", alpha = 0.1)) + 
+  geom_density(aes(liveness, fill ="liveness", alpha = 0.1)) + 
+    scale_x_continuous(name = "Energy, Valence, Danceability, Acousticness, and Liveness") +
+    scale_y_continuous(name = "Density") +
+    ggtitle("Density plot of Energy, Valence, Danceability, Acousticness, and Liveness") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 14, face = "bold"),
+          text = element_text(size = 12)) +
+    theme(legend.title=element_blank()) +
+    scale_fill_brewer(palette="Accent")
+
+correlated_density
+
+```
+#### Look at distribution of Songs by Key
+```{r}
+# Create key_val column to map key number to actual key
+df$key <- as.character(df$key)
+df$key_val <- revalue(df$key, c("0" = "C", "1" = "C♯,D♭", "2" = "D", "3" = "D♯,E♭", "4" = "E", "5" =  "F", "6" = "F♯,G♭","7" = "G","8" = "G♯,A♭","9" = "A","10" = "A♯,B♭","11" = "B"))
+head(df$key_val)
+```
+
+```{r}
+# Plot distribution of keys
+song_keys <- df %>%
+    group_by(key_val) %>%
+    dplyr::summarise(n_key = n()) %>%
+    arrange(desc(n_key))
+
+song_keys$key <- factor(song_keys$key_val, levels = song_keys$key_val[order(song_keys$n_key)]) # in order to visualise the keys in descending order
+
+ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_key))) +
+    geom_bar(stat = "identity") +
+    labs(title = "Distribution by Key of Spotify Songs", x = "Keys", y = "Count of Key Frequency of Songs") +
+    geom_text(aes(label=n_key), position = position_stack(vjust = 0.8)) +
+    theme_bw() +
+    theme(plot.title = element_text(size=15,face = "bold"), axis.title = element_text(size=12)) +
+    theme(legend.position="none")
+```
+
+
+
+```{r}
+# Plot Top Distribution of Keys for Top 10% of most popular songs
+song_keys <- df %>%
+    filter(quantile(popularity, 0.9)<popularity)%>% # Get Top Quantile of Songs
+    group_by(key_val)%>%
+    dplyr::summarise(n_key = n(), mean = mean(popularity)) %>%
+    arrange(desc(n_key))
+song_keys$key <- factor(song_keys$key_val, levels = song_keys$key_val[order(song_keys$n_key)]) # in order to visualise the keys in descending order
+
+ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_key))) +
+    geom_bar(stat = "identity") +
+    labs(title = "Distribution of the Keys of Top 10% most Popular Songs", x = "Keys", y = "Count of Key Frequency of Songs",subtitle="Top number represents frequency, bottom number represents mean popularity for that key") +
+    geom_text(aes(label=n_key), position = position_stack(vjust = 0.8)) +
+    geom_text(aes(label=round(mean)), position = position_stack(vjust = 0.2)) +
+    theme_bw() +
+    theme(plot.title = element_text(size=15,face = "bold"), axis.title = element_text(size=12)) +
+    theme(plot.subtitle=element_text(size=10, hjust=0.5, face="italic", color="black"))+
+    theme(legend.position="none")
+
+```
+
+
+#### Look at feature changes over time
+```{r, fig.width=10,fig.height=50}
+# Group df by year, take the mean value of each feature
+start_year = min(df$year)
+end_year = max(df$year)
+trend_chart <- function(arg){
+trend_change <- df  %>% group_by(year) %>% summarize_at(vars(all_of(arg)), funs(Average = mean))
+chart<- ggplot(data = trend_change, aes(x = as.Date(year), y = Average)) + 
+     geom_line(color = "#00AFBB", size = 1)+ labs(x="Year")+ 
+    scale_x_date(date_labels = "%Y") + scale_y_continuous(name=paste("",arg,sep=""))
+return(chart)
+}
+
+# Plot trend over each year for each feature
+trend_chart_track_popularity<-trend_chart("popularity")
+trend_chart_acousticness <- trend_chart("acousticness")
+trend_chart_danceability<-trend_chart("danceability")
+trend_chart_energy<-trend_chart("energy")
+trend_chart_loudness<-trend_chart("loudness")
+trend_chart_valence <-trend_chart("valence")
+trend_chart_tempo <-trend_chart("tempo")
+trend_chart_duration_ms<-trend_chart("duration_ms")
+trend_chart_speechiness<-trend_chart("speechiness")
+trend_chart_liveness <-trend_chart("liveness")
+trend_chart_instrumentalness <-trend_chart("instrumentalness")
+trend_chart_explicit <- trend_chart("explicit")
+
+plot_grid(trend_chart_track_popularity, trend_chart_danceability, trend_chart_energy, trend_chart_loudness, trend_chart_duration_ms, trend_chart_speechiness,trend_chart_acousticness,trend_chart_valence,trend_chart_tempo,trend_chart_liveness,trend_chart_instrumentalness,trend_chart_explicit, ncol = 1, label_size = 1)
+```
+
+#### Look at Correlation of Features
+```{r}
+# Extract all numeric values from df
+numerics = df[,!(colnames(df)  %in% c("id","artists","name","release_date", "key_val"))]
+numerics$key = as.integer(numerics$key)
+tidyverse_static_correlations <- numerics %>% correlate() 
+print.data.frame(tidyverse_static_correlations)
+
+```
+
+```{r}
+# Correlation Plot
+mtCor <- cor(numerics)
+corrplot(mtCor, method = "ellipse", type = "upper", tl.srt = 45)
+```
+
+```{r}
+# Network plot
+# To interpret this plot, variables that are more highly correlated appear closer together and are joined by stronger paths. Paths are colored by their
+# sign (positive = blue, red = negative).
+net_plot <- tidyverse_static_correlations %>%
+    network_plot(colours = c("indianred2", "black", "skyblue1"),repel=TRUE, legend = TRUE) +
+    labs(
+        title = "Network Plot of Correlations of Numeric Features of Spotify Songs"
+        ) +
+    expand_limits(x = c(-0.75, 0.25), y = c(-0.4, 0.4)) +
+    theme_tq() +
+    theme(legend.position = "right")
+net_plot
+
+```
+#### Build a K-means Clustering model to further analyze the features
+
+We use a K-Means Clustering model as an unsupervised learning technique to determine
+how many natural "categories" of songs there are in the data. This is a dimensionality reduction technique used to group songs together.
+
+We use the Elbow method to determine the optimal number of clusters, and we minimize the Within-cluster Sum-of-Squares.
+
+```{r}
+# Need to use all numeric values of relevant features and scale inputs 
+cluster.input <- numerics
+cols <- colnames(cluster.input)
+cluster.input.scaled <- scale(cluster.input[,cols])
+head(cluster.input.scaled)
+
+```
+Train clusters with various k-values (2-5)
+```{r}
+# kmeans with different k values
+k2 <- kmeans(cluster.input.scaled, centers = 2, nstart = 25)
+k3 <- kmeans(cluster.input.scaled, centers = 3, nstart = 25)
+k4 <- kmeans(cluster.input.scaled, centers = 4, nstart = 25)
+k5 <- kmeans(cluster.input.scaled, centers = 5, nstart = 25)
+
+# plots to compare
+p1 <- fviz_cluster(k2, geom = "point",  data = cluster.input.scaled) + ggtitle("k = 2")
+p2 <- fviz_cluster(k3, geom = "point",  data = cluster.input.scaled) + ggtitle("k = 3")
+p3 <- fviz_cluster(k4, geom = "point",  data = cluster.input.scaled) + ggtitle("k = 4")
+p4 <- fviz_cluster(k5, geom = "point",  data = cluster.input.scaled) + ggtitle("k = 5")
+
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+```
+
+
+```{r}
+# Visualize how WSS-metric is reduced as we increase the number of clusters
+set.seed(100)
+fviz_nbclust(cluster.input[1:1000,], kmeans, method = "wss")
+```
+
+Generate a table of WSS errors by number of clusters
+```{r}
+n_clust<-fviz_nbclust(cluster.input[1:1000,], kmeans, method = "wss")
+n_clust<-n_clust$data
+n_clust %>% rename(replace = c("y" = "Within_sum_of_squared_error", "clusters" = "Number_of_clusters")) %>% 
+  mutate(Within_sum_of_squared_error = color_tile("white", "red")(Within_sum_of_squared_error)) %>% 
+  kable("html", escape = F) %>% 
+  kable_styling("hover", full_width = F) %>% 
+  column_spec(2, width = "5cm") %>%
+  row_spec(3:3, bold = T, color = "white", background = "grey")
+```
+
+##### Insights: 
+From this K-means cluster analysis, we can see that the within-cluster sum-of-squares error stabilizes when k becomes 3. 
+Thus, this means that the features in the dataset can categorize the songs in 3 main categories; there is therefore a lot of commonalities from the features of the observed songs. 
+
+
+## **Model Building** 
+
+### Timeseries trend Predictions
+
+#### Train a multilayer perceptron (a type of feedforward artificial neural network) for each feature in the dataset (grouped by year).
+
+Prepare the dataset for training
+```{r}
+
+# Take all relevant features from the yearly dataset 
+df_year.train = df_year %>% select(-c("mode", "key"))
+head(df_year.train)
+
+# Create a function to take a data frame and transform it into a ts object, and then train an MLP NN with that ts object
+train_mlp <- function(arg){
+df_year.ts = ts(arg, start = start, end = end, frequency = 1)
+df_year.nn <- mlp(y = df_year.ts)
+
+return(df_year.nn)
+}
+```
+
+Train an MLP model for each feature
+```{r}
+
+for (i in 2:length(colnames(df_year.train))){
+  col = colnames(df_year.train)[i]
+  print(paste0("Training Model for: ", col))
+  model = train_mlp(df_year.train%>% select(col))
+  model.forecast = forecast(model, h=12)
+  
+  assign(paste("df_year.", col,".model", sep=""),model)
+  assign(paste("df_year.", col,".forecast", sep=""),model.forecast)
+  
+  # Print Model results and plot the model architecture
+  print(model)
+  plot(model)
+}
+
+```
+
+
+```{r}
+# Plot all forecasts
+colnames(df_year)
+autoplot(df_year.acousticness.forecast, ylab = "acousticness")
+autoplot(df_year.danceability.forecast, ylab = "danceability")
+autoplot(df_year.duration_ms.forecast, ylab = "duration_ms")
+autoplot(df_year.energy.forecast, ylab = "energy")
+autoplot(df_year.instrumentalness.forecast, ylab = "instrumentalness")
+autoplot(df_year.liveness.forecast, ylab = "liveness")
+autoplot(df_year.loudness.forecast, ylab = "loudness")
+autoplot(df_year.speechiness.forecast, ylab = "speechiness")
+autoplot(df_year.tempo.forecast, ylab = "tempo")
+autoplot(df_year.valence.forecast, ylab = "valence")
+autoplot(df_year.popularity.forecast, ylab = "popularity")
+autoplot(df_year.key.forecast, ylab = "key")
+
+```
+
+
+### Popularity Predictions
+
+#### Transformations to create dataset for predictions
+
+Look at distribution of main dataset by year
+```{r}
+histogram(df$year)
+```
+The dataset has an even quantity of data for each year since 1960 (except for 2020). 
+As a result, in orderr to reduce the burden of the dataset for predictions, we truncate the dataset to rows on and after the year 1990. 
+
+```{r}
+# Apply transformations to create a prediction dataset
+
+# Truncate to years on or after 1990
+predict_set = df[df$year >= 1990,]
+
+# Remove uneeded columns
+predict_set = predict_set[,!(colnames(predict_set)  %in% c("id","release_date","name", "artists"))]
+glimpse(predict_set)
+```
+Key is categorical - need to turn the feature into multiple columns of dummy variables 
+```{r}
+# Look at number of unique Keys
+unique(predict_set$key)
+```
+
+```{r}
+# Create dummy variables for each unique key value.
+# remove_first_dummy set to true to remove first dummy variable created - done to avoid multicollinearity in a multiple regression model. 
+predict_set <- fastDummies::dummy_cols(predict_set,select_columns = "key", remove_first_dummy = TRUE)
+predict_set = select(predict_set, -c(key,key_val))
+head(predict_set)
+```
+
+#### Split into training and prediction set (80/20 split)
+
+```{r}
+# 80% as train_set
+train_size <- floor(0.80 * nrow(predict_set))
+
+set.seed(123)
+train_ind <- sample(seq_len(nrow(predict_set)), size = train_size)
+
+predict_set.train <- predict_set[train_ind, ]
+predict_set.test <- predict_set[-train_ind, ]
+
+# Look at number of prediction/training set rows
+nrow(predict_set.train)
+nrow(predict_set.test)
+```
+
+```{r}
+# Snapshot of training set
+glimpse(predict_set.train)
+summary(predict_set.train)
+```
+
+#### Train a Multiple Linear Regression Model to predict popularity
+```{r}
+predict_set.lm_train <- glm(popularity~., data=predict_set.train)
+# Get training results
+summary(predict_set.lm_train)
+```
+Test model on predictions and get training errors
+```{r}
+predictions.lm <- predict(predict_set.lm_train,predict_set.test)
+paste("RMSE:",Metrics::rmse(predict_set.test$popularity, predictions.lm))
+paste("MAE:",Metrics::mae(predict_set.test$popularity, predictions.lm))
+paste("MASE:",Metrics::mase(predict_set.test$popularity, predictions.lm))
+```
+
+##### Error Metrics:
+RMSE: Root-mean squared error is used as a main error metric to minimize. This error metric provides a measure of accuracy of the model that is dependent on the scale of the dependent variable that we seek to predict (i.e. popularity, which ranges from 0 - 100).\n
+
+MAE: Mean absolute error is another error metric used, as a measure of errors between paired observations and the (average) accuracy of the model. \n
+
+MASE: Note that Mean Absolute Scaled Error (MASE) is used instead of MAPE since MASE is scale invariant (mean absolute scaled error is independent of the scale of the data, so it can be used to compare forecasts across datasets with different scales). Also, MASE does not cause issues when y is close to 0 (or y is 0), which occurs in the test dataset (since some songs have popularity equal to 0), and which can cause MAPE to go to infinity.\n
+
+
+##### Insights:
+Describe here
+
+
+
+#### Train a Random Forests Model to predict popularity
+In order to capture the non-linear relationships in the dataset, we train a random-forests model.
+This model can capture non-linear relationships by utilizing various independent decision trees to arrive at a prediction.
+
+We speed up this process, we train this random-forest with 500 iterations in parallel, using 8-cores. 
+
+```{r}
+# Change the below parameter to change the number of cores to parallelize on. 
+cl<-makePSOCKcluster(8) 
+  
+registerDoParallel(cl) 
+  
+start.time<-proc.time() 
+  
+ 
+set.seed(123)
+predict_set.rf_train = randomForest(predict_set.train[, !names(predict_set.train) %in% c("popularity")],predict_set.train$popularity,xtest=predict_set.test[, !names(predict_set.train) %in% c("popularity")],ytest=predict_set.test$popularity,do.trace=TRUE, keep.forest=TRUE)
+
+predict_set.rf_train = randomForest(popularity ~ acousticness + danceability + duration_ms+ energy+ explicit+ instrumentalness+ liveness+ loudness+ mode+ speechiness+ tempo+ valence+ year+ key_1+ key_2+ key_3+ key_4+ key_5+ key_6+ key_7+ key_8+ key_9+ key_10+ key_11, data = predict_set.train)
+
+stop.time<-proc.time() 
+  
+run.time<-stop.time -start.time 
+  
+print(run.time) 
+  
+stopCluster(cl) 
+print(predict_set.rf_train)
+
+```
+Test model on predictions and get training errors
+```{r}
+predictions.rf = predict(predict_set.rf_train, newdata = predict_set.test)
+paste("RMSE:",Metrics::rmse(predict_set.test$popularity, predictions.rf))
+paste("MAE:",Metrics::mae(predict_set.test$popularity, predictions.rf))
+paste("MASE:",Metrics::mase(predict_set.test$popularity, predictions.rf))
+
+```
+ Look at the importance of features of the trained random-forests model
+```{r}
+# Feature Explanations Plot
+varImpPlot(predict_set.rf_train,main="Feature Importance of Random Forests Model")
+```
+##### Insights:
+This random forests model has a relatively small RMSE, but we recognize the following issues:
+- Low % of Variance Explained implies that there are other factors that influence music popularity, and these factors were not captured in the data. This may mean that the features in the dataset do not fully describe the factors that influence music popularity
+- From the features explanations plot, a large portion of the popularity prediction is dependent on year. This can be seen in the trend where the mean popularity of songs increases as the year increases. 
+
+
+
+#### Train a Gradient Boosting Model to predict popularity
+
+
+Prepare a different training set for this Gradient Boosting model
+```{r}
+# For this model, we split the popularity column away from the dataset and explicitly specify it as the y-variable.  
+train_x = data.matrix(predict_set.train[, !names(predict_set.train) %in% c("popularity")])
+train_y = predict_set.train$popularity
+
+test_x = data.matrix(predict_set.test[, !names(predict_set.test) %in% c("popularity")])
+test_y = predict_set.test$popularity
+
+
+predict_set.xgb_train = xgb.DMatrix(data = train_x, label = train_y)
+predict_set.xgb_test = xgb.DMatrix(data = test_x, label = test_y)
+
+# Train an XGBoost model
+# To avoid overfitting, we use relatively shallow trees (max-depth = 3), set early stopping rounds to 3, eta=0.10, and number of training rounds to 600
+predict_set.xgb_model = xgboost(data = predict_set.xgb_train, max.depth = 3, nrounds = 600, early_stopping_rounds = 3,eta=0.10,nthread=3)
+# Get model details
+print(predict_set.xgb_model)
+```
+
+Test model on predictions and get training errors
+```{r}
+# Get predictions
+predictions.xgb = predict(predict_set.xgb_model, predict_set.xgb_test)
+paste("RMSE:",Metrics::rmse(predict_set.test$popularity, predictions.xgb))
+paste("MAE:",Metrics::mae(predict_set.test$popularity, predictions.xgb))
+paste("MASE:",Metrics::mase(predict_set.test$popularity, predictions.xgb))
+
+```
+
+We plot the original test set popularity against the predicted test set popularity
+```{r}
+x = 1:length(test_y)
+plot(x, test_y, col = "red", type = "l")
+lines(x, predictions.xgb, col = "blue", type = "l")
+legend(x = 1, y = 38,  legend = c("Actual test set popularity", "Predicted test set popularity"), 
+       col = c("red", "blue"), box.lty = 1, cex = 0.8, lty = c(1, 1))
+```
+
+We compute the feature importance matrix for this model as well.
+```{r}
+
+# Compute feature importance matrix
+names <- dimnames(data.matrix(predict_set.train[,-1]))[[2]]
+
+importance_matrix <- xgb.importance(names, model = predict_set.xgb_model)
+xgb.plot.importance(importance_matrix[1:10,])
+```
+##### Insights: 
+Insights here
+
+
+#### Use AutomML to train and search for a model that accurately predicts popularity
+
+We use H2O (an AutoML library) to automatically train models and optimize hyperparameters to optimize for predicting popularity.
+```{r}
+# Initialize H2O engine
+h2o.init()
+
+predict_set.h2o_train <- as.h2o(predict_set.train)
+predict_set.h2o_test <- as.h2o(predict_set.test)
+```
+
+To reduce compute time, we train a maximum of 30 models. 
+```{r}
+h2o_train.aml <- h2o.automl(y = "popularity", training_frame = predict_set.h2o_train, max_models = 30)
+lb <- h2o.get_leaderboard(h2o_train.aml)
+# Print the model leaderboard (ranked by RMSE)
+head(lb)
+```
+Use the best model (leader model) to predict on the test set.
+```{r}
+predictions <- h2o.predict(h2o_train.aml@leader, predict_set.h2o_test)
+```
+
+Take all models in the leaderboard, and use each model to predict on the test set. 
+```{r}
+perf_df<-data.frame(model_name=character(0),RMSE=numeric(0),MSE=numeric(0),MAE=numeric(0),RMSLE=numeric(0),mean_residual_deviance=numeric(0),r2=numeric(0))
+mod_ids <- as_tibble(h2o_train.aml@leaderboard$model_id)
+for(i in 1:6) {
+  aml1 <- h2o.getModel(h2o_train.aml@leaderboard[i, 1]) # get model object in environment
+  perf <- h2o.performance(aml1, predict_set.h2o_test)
+  perf_df[nrow(perf_df) + 1,] = list(perf@metrics$model$name, perf@metrics$RMSE, perf@metrics$MSE, perf@metrics$mae, perf@metrics$rmsle, perf@metrics$mean_residual_deviance,  perf@metrics$r2)
+ 
+  
+}
+
+# Print all performance metrics
+perf_df
+
+```
+##### Insights:
+
+
+
+## **Performance Comparisons and Conclusions** 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Junk Work Below
+
+
+We now train a Neural Network with the data given.
+
+For Neural Networks, we need to normalize the data (to ensure convergence). Min-max scaling is used.
+```{r}
+maxs <- apply(predict_set, 2, max) 
+mins <- apply(predict_set, 2, min)
+scaled <- as.data.frame(scale(predict_set, center = mins, scale = maxs - mins))
+summary(scaled)
+```
+Apply Scaling to train and test sets
+```{r}
+predict_set.scaled_train <- scaled[train_ind,]
+predict_set.scaled_test <- scaled[-train_ind,]
+
+nrow(predict_set.scaled_train)
+nrow(predict_set.scaled_test)
+```
+```{r}
+head(df_year)
+start = min(df_year$year)
+end = max(df_year$year)
+
+```
+
+
+```{r}
+#df_artist[df$artists in ]
+dplyr::filter(df_genre, grepl('pop', genres))
+
+```
+
+
+```{r}
+summary(predict_set.train$year)
+start = min(predict_set.train$year)
+end = max(predict_set.train$year)
+start
+end
+predict_set.ts = ts(predict_set.train$popularity, start = start, end = end, frequency = 1)
+```
+```{r}
+summary(predict_set.test$year)
+start = min(predict_set.test$year)
+end = max(predict_set.test$year)
+start
+end
+predict_set.ts_test = ts(predict_set.test$popularity, start = start, end = end, frequency = 1)
+```
+
+
+```{r}
+predict_set.nn <- mlp(y = predict_set.ts)
+predict_set.nn
+```
+```{r}
+plot(predict_set.nn)
+```
+
+```{r}
+predict_set.ts_test_forecast = forecast(predict_set.nn, h=12)
+plot(predict_set.ts_test_forecast)
+
+```
+
+```{r}
+plot(predict_set.train$popularity)
+```
+
+
+```{r}
+maxs <- apply(predict_set.ts, 2, max) 
+mins <- apply(predict_set.ts, 2, min)
+scaled <- as.data.frame(scale(predict_set.ts, center = mins, scale = maxs - mins))
+
+
+```
+
+
+```{r}
+predict_set.nn <- elm(predict_set.scaled_train)
+
+```
+
+
+Train the NN
+```{r}
+
+n <- names(predict_set.scaled_train)
+f <- as.formula(paste("popularity ~", paste(n[!n %in% "popularity"], collapse = " + ")))
+#predict_set.nn_train <- elm(predict_set.scaled_train)
+predict_set.nn_train <- neuralnet(f,data=predict_set.scaled_train, hidden = c(4,2),linear.output=T,act.fct="tanh",lifesign ="full", threshold=0.1)
+plot(nn_train)
+
+```
+
+```{r}
+attributes(nn)$names
+```
+
+
+
+
+
+
+```{r}
+## 80% as train_set
+tmp_size <- floor(0.10 * nrow(predict_set))
+
+set.seed(123)
+train_ind <- sample(seq_len(nrow(predict_set)), size = tmp_size)
+
+tmp_train <- predict_set[train_ind, ]
+
+nrow(tmp_train)
+```
+```{r}
+set.seed(123)
+
+rf_tmp = randomForest(popularity ~ acousticness + danceability + duration_ms+ energy+ explicit+ instrumentalness+ liveness+ loudness+ mode+ speechiness+ tempo+ valence+ year+ key_1+ key_2+ key_3+ key_4+ key_5+ key_6+ key_7+ key_8+ key_9+ key_10+ key_11, data = tmp_train)
+
+print(rf)
+```
+
+```{r}
+rf_tmp
+```
+
+
+```{r}
+
+predictions = predict(rf_tmp, newdata = tmp_train)
+predictions_test = predict(rf_tmp, newdata = predict_set.test)
+
+
+rmse <- rmse(tmp_train$popularity, predictions)
+rmse
+
+rmse <- rmse(tmp_train$popularity, predictions_test)
+rmse
+```
+
+```{r}
+
+cl<-makePSOCKcluster(8) 
+  
+registerDoParallel(cl) 
+  
+start.time<-proc.time() 
+  
+model<-train(popularity~., data=predict_set.train, method='rf') 
+  
+stop.time<-proc.time() 
+  
+run.time<-stop.time -start.time 
+  
+print(run.time) 
+  
+stopCluster(cl) 
+
+```
+
+
+```{r}
+
+set.seed(123)
+
+predict_set.rf_train = randomForest(popularity ~ acousticness + danceability + duration_ms+ energy+ explicit+ instrumentalness+ liveness+ loudness+ mode+ speechiness+ tempo+ valence+ year+ key_1+ key_2+ key_3+ key_4+ key_5+ key_6+ key_7+ key_8+ key_9+ key_10+ key_11, data = predict_set.train)
+
+print(rf)
+
+```
+
