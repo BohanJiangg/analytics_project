@@ -61,22 +61,7 @@ library(tidyverse)
 library(tidyquant)  
 library(cranlogs)   
 library(corrr)      
-library(cowplot)
-library(readr)
-library(plyr)
-library(formattable)
-library(wordcloud)
-library(RWeka)
-library(qdap)
-library(tm)
-library(dplyr)
-library(magrittr)
-library(corrplot)
-library(treemap)
-library(viridisLite)
-library(factoextra)
-library(gridExtra)
-library(kableExtra)
+library(cowplot)    
 ```
 
 
@@ -100,25 +85,10 @@ head(df_artist)
 head(df_year)
 head(df_genres2)
 ```
-
-```{r}
-# Find certain songs by feature and listen to them
-df %>% arrange(desc(acousticness))
-df %>% arrange(desc(danceability))
-df %>% arrange(desc(valence))
-```
-
-
-
 Data Cleaning
 ```{r}
 # Take only unique rows - remove duplicates
-<<<<<<< HEAD
-df <- distinct(df)
-
-=======
 df <- df %>% distinct()
->>>>>>> 0c1da7e44e0aa2f4defd37dcf0b0bb9683131bfc
 # Remove null rows in R
 df <- df[rowSums(is.na(df)) == 0,]
 # Change year column to a date value
@@ -131,60 +101,13 @@ Data Summary
 # Get summary of main dataframe
 # Data Dimensions
 dim(df)
+# Column names, column types, preview of data
+str(df)
 # Statistical summary of every column
 summary(df)
 # Print all column names
 colnames(df)
-<<<<<<< HEAD
-
-
-# Column names, column types, preview of data
-str(df)
 ```
-
-```{r}
-top_artists <- df %>%
-    group_by(artists) %>%
-    dplyr::summarise(n_apperance = n()) 
-top_artists
-=======
->>>>>>> 0c1da7e44e0aa2f4defd37dcf0b0bb9683131bfc
-```
-
-
-
-
-Plot distributions of all values
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Try to determine explanations for the top 10% of songs
-
-
-
-
-
-
-Use K-Means to determine how many songs are similar
-
-
-```{r}
-
-```
-
-
-
 
 Correlation Plot of numeric Features
 ```{r}
@@ -194,22 +117,6 @@ tidyverse_static_correlations <- numerics %>% correlate()
 print.data.frame(tidyverse_static_correlations)
 ```
 
-<<<<<<< HEAD
-
-
-5-year rolling correlation of each numeric factor over time
-
-```{r}
-# Group by year and get mean of numeric features for each year
-df_grped_year <- aggregate(df[,c(names(numerics),"year")], list(df$year), mean)
-df_grped_year <- df_grped_year[,!names(df_grped_year) %in% "Group.1"]
-df_grped_year
-```
-```{r}
-
-static_corr_Year <-  df_grped_year[,!names(df_grped_year) %in% "year"] %>% correlate() 
-print.data.frame(static_corr_Year)
-=======
 ```{r}
 # Correlation Plot
 correlations = cor(numerics)
@@ -228,51 +135,27 @@ net_plot <- tidyverse_static_correlations %>%
     theme_tq() +
     theme(legend.position = "right")
 net_plot
->>>>>>> 0c1da7e44e0aa2f4defd37dcf0b0bb9683131bfc
 ```
-
+5-year rolling correlation of each numeric factor over time
+---Work-in-Progress---
 
 ```{r}
 # Get rolling correlations
-tidyverse_rolling_corr <- df_grped_year %>%
+tidyverse_rolling_corr <- df %>%
     # Data wrangling
-    select(year, energy, popularity) %>%
+    select(year, energy, loudness) %>%
     # Mutation
     tq_mutate_xy(
         x          = energy,
-        y          = popularity,
+        y          = loudness,
         mutate_fun = runCor, 
-        n          = 10,
+        # runCor args
+        n          = 30,
         use        = "pairwise.complete.obs",
+        # tq_mutate args
         col_rename = "rolling_corr"
     )
 tidyverse_rolling_corr
-```
-```{r}
-# Join static correlations with rolling correlations
-static_corr_pop <- static_corr_Year %>% select(rowname, popularity) %>% rename(feature = rowname)
-static_corr_pop
-tidyverse_rolling_corr <- tidyverse_rolling_corr %>%
-    left_join(static_corr_pop, by = "feature") %>%
-    rename(static_corr = all_cran)
-tidyverse_rolling_corr
-```
-
-```{r}
-# Plot
-tidyverse_rolling_corr %>%
-    ggplot(aes(x = year, color="energy")) +
-    # Data
-    geom_point(aes(y = rolling_corr), alpha = 0.5) +
-    # Aesthetics
-    scale_color_tq() +
-    labs(
-        title = "Rolling Correlations between Popularity and Energy",
-        x = "Year", y = "Correlation"
-    ) +
-    theme_tq() +
-    theme(legend.position="none")
-
 ```
 
 
