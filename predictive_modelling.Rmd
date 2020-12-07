@@ -7,11 +7,11 @@ date: December 9th, 2020
 ---
 
 
-### 1. Project Value and Impact
+## **Project Value and Impact**
 The overarching objective for this project is to predict the next hit songs and understand what features drives popularity over time. This will give music professionals (music producer, song writer, singer, etc) a data-driven approach to be successful in the industry.
 In order to do this, we will be analyzing different variable relations, music trends over different decades, and feature significance with popularity. In the next few sections, we have shown in details different steps to clean the dataset, draw different insights/visualization based on initial analysis of the data, and create two predictive models to meet our objective. 
 
-### 2. Data Set Description
+## **Data Set Description**
 For this project, our team decided to take a data-driven approach to evaluate music. We are using the Spotify Dataset from 1921 to 2020 that consists of over 160,000 different tracks (from Kaggle). In order to stay consistent in the evaluation, all data was sourced from the Spotify Web API. The following set of data is combination of Primary, Numerical, Dummy(binary), and Categorical data. This allows us to explore different types of models and draw different insights. Here are all the variables that is included in the data set:
 
 Primary 
@@ -743,6 +743,8 @@ perf_df
 
 ## **Performance Comparisons and Conclusions** 
 
+
+After building three different types of models: Multiple Linear Regression, Random Forests, and Gradient Boosting, we were able to predict popularity up to around 9% in confidence interval. Similar to the Stock Market class, we have learned that some variables are hard to predict on its own. For our Spotify project, we have concluded that the features in our dataset are not strong predictor of popularity. However, in the future, we are eager to incorporate other datasets like song frequency on different social media platforms (Twitter/Instagram) to find better predictors. Nonetheless, we have built a very strong foundation for predicting song popularity and have learned many lessons along the way.
 
 
 
