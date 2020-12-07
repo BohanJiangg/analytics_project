@@ -72,7 +72,7 @@ q1s = data.frame(matrix(ncol=3, nrow=0))
 medians = data.frame(matrix(ncol=3, nrow=0))
 q3s = data.frame(matrix(ncol=3, nrow=0))
 feature_names = c("acousticness", "danceability", "instrumentalness", "energy",
-                  "duration_ms")
+                  "duration_ms", "valence", "tempo", "liveness", "loudness", "speechiness")
 for(i in 1921:2020){
   annual_val = subset(df, year==i)
 
@@ -92,9 +92,9 @@ split_q1s <- split(q1s, q1s$Feature)
 split_medians <- split(medians, medians$Feature)
 split_q3s <- split(q3s, q3s$Feature)
 
-feature_quantiles = array(0, c(100,3,5))
+feature_quantiles = array(0, c(100,3,length(feature_names)))
 
-for(i in 1:5){
+for(i in 1:length(feature_names)){
   for(j in 1:100){
     feature_quantiles[j,1,i] = split_q1s[[i]][[3]][j]
     feature_quantiles[j,2,i] = split_medians[[i]][[3]][j]
@@ -114,7 +114,7 @@ dimnames(feature_quantiles) <- list(1921:2020,
 
 #acoustics
 
-plot(1930,1, xlim = c(1921,2020), ylim = range(0,2))
+plot(1930,1, xlim = c(1921,2020), ylim = range(0,2), xlab="Year", ylab="Range")
 for(i in 1:length(feature_names)){
   name = feature_names[i]
   medians = as.numeric(feature_quantiles[,,name][,"Median"])
@@ -135,7 +135,7 @@ q1s = data.frame(matrix(ncol=3, nrow=0))
 medians = data.frame(matrix(ncol=3, nrow=0))
 q3s = data.frame(matrix(ncol=3, nrow=0))
 feature_names = sort(c("acousticness", "danceability", "instrumentalness", "energy",
-                  "duration_ms"))
+                  "duration_ms", "valence", "tempo", "liveness", "loudness", "speechiness"))
 for(i in 1921:2020){
   annual_val = subset(df, year==i)
   
@@ -160,9 +160,9 @@ split_q1s <- split(q1s, q1s$Feature)
 split_medians <- split(medians, medians$Feature)
 split_q3s <- split(q3s, q3s$Feature)
 
-feature_quantiles = array(0, c(100,3,5))
+feature_quantiles = array(0, c(100,3,length(feature_names)))
 
-for(i in 1:5){
+for(i in 1:length(feature_names)){
   for(j in 1:100){
     feature_quantiles[j,1,i] = split_q1s[[i]][[3]][j]
     feature_quantiles[j,2,i] = split_medians[[i]][[3]][j]
@@ -182,7 +182,7 @@ dimnames(feature_quantiles) <- list(1921:2020,
 
 #acoustics
 
-plot(1930,1, xlim = c(1921,2020), ylim = range(0,2))
+plot(1930,1, xlim = c(1921,2020), ylim = range(0,2), xlab="Year", ylab="Range")
 for(i in 1:length(feature_names)){
   name = feature_names[i]
   medians = as.numeric(feature_quantiles[,,name][,"Median"])
@@ -207,7 +207,7 @@ medians = data.frame(matrix(ncol=3, nrow=0))
 best_medians = data.frame(matrix(ncol=3, nrow=0))
 q3s = data.frame(matrix(ncol=3, nrow=0))
 feature_names = sort(c("acousticness", "danceability", "instrumentalness", "energy",
-                  "duration_ms", "loudness", "valence"))
+                  "duration_ms", "valence", "tempo", "liveness", "loudness", "speechiness"))
 for(i in 1921:2020){
   annual_val = subset(df, year==i)
   top_10 = floor(nrow(annual_val)*0.1)
@@ -270,16 +270,18 @@ for(i in 1:length(feature_names)){
 
 
 Train time series models to forecast the future models.
+Set up the libraries and the training/testing amounts
 ```{r}
 library("smooth")
 library("forecast")
-library(nnfor)
+library("nnfor")
 training.percent = 0.95
 nTrain = 100*training.percent
 nTest = 100*(1-training.percent)
+```
 
-
-#Acousticness
+Accousticness Models
+```{r}
 acousticness = ts(as.numeric(feature_quantiles[,"acousticness"]) , start=1921)
 acousticness.train = subset(acousticness, start=1, end=nTrain)
 acousticness.test = subset(acousticness, start = (nTrain+1), end =(nTrain+nTest))
@@ -303,10 +305,10 @@ acousticness.nn.forecast <- forecast(acousticness.train.nn, h=nTest)
 acousticness.nn.mape = mape(acousticness.nn.forecast$mean, acousticness.test)
 plot(acousticness, main=paste("Acousticness", "NN"), sub=paste("MAPE:", round(acousticness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
 lines(ts(acousticness.nn.forecast$mean, start=1921+nTrain), col=2)
+```
 
-
-
-#Energy
+Energy
+```{r}
 energy = ts(as.numeric(feature_quantiles[,"energy"]) , start=1921)
 energy.train = subset(energy, start=1, end=nTrain)
 energy.test = subset(energy, start = (nTrain+1), end =(nTrain+nTest))
@@ -330,10 +332,38 @@ energy.nn.forecast <- forecast(energy.train.nn, h=nTest)
 energy.nn.mape = mape(energy.nn.forecast$mean, energy.test)
 plot(energy, main=paste("Energy", "NN"), sub=paste("MAPE:", round(energy.nn.mape* 100, 3), "%"), xlab="Year", ylab="Median Value")
 lines(ts(energy.nn.forecast$mean, start=1921+nTrain), col=2)
+```
+
+Danceability
+```{r}
+danceability = ts(as.numeric(feature_quantiles[,"danceability"]) , start=1921)
+danceability.train = subset(danceability, start=1, end=nTrain)
+danceability.test = subset(danceability, start = (nTrain+1), end =(nTrain+nTest))
+
+#SES
+danceability.train.ses <- ses(danceability.train, h=nTest)
+danceability.ses.mape = mape(danceability.train.ses$mean, danceability.test)
+plot(danceability.train.ses, main=paste("danceability", "SES"), sub=paste("MAPE:", round(danceability.ses.mape* 100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(danceability)
+
+#SARIMA
+danceability.sarima.model <- auto.arima(danceability.train)
+danceability.sarima <- forecast(danceability.sarima.model, h=nTest)
+danceability.sarima.mape = mape(danceability.sarima$mean, danceability.test)
+plot(danceability.sarima, main=paste("danceability", "SARIMA"), sub=paste("MAPE:", round(danceability.sarima.mape* 100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(danceability)
+
+#Neural Network
+danceability.train.nn <- elm(danceability.train)
+danceability.nn.forecast <- forecast(danceability.train.nn, h=nTest)
+danceability.nn.mape = mape(danceability.nn.forecast$mean, danceability.test)
+plot(danceability, main=paste("danceability", "NN"), sub=paste("MAPE:", round(danceability.nn.mape* 100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(ts(danceability.nn.forecast$mean, start=1921+nTrain), col=2)
+```
 
 
-
-#Duration
+Duration
+```{r}
 duration = ts(as.numeric(feature_quantiles[,"duration_ms"]) , start=1921)
 duration.train = subset(duration, start=1, end=nTrain)
 duration.test = subset(duration, start = (nTrain+1), end =(nTrain+nTest))
@@ -360,10 +390,148 @@ plot(duration, main=paste("Duration", "NN"), sub=paste("MAPE:", round(duration.n
 lines(ts(duration.nn.forecast$mean, start=1921+nTrain), col=2)
 ```
 
+Valence
+```{r}
+valence = ts(as.numeric(feature_quantiles[,"valence"]) , start=1921)
+valence.train = subset(valence, start=1, end=nTrain)
+valence.test = subset(valence, start = (nTrain+1), end =(nTrain+nTest))
+
+#SES
+valence.train.ses <- ses(valence.train, h=nTest)
+valence.ses.mape = mape(valence.train.ses$mean, valence.test)
+plot(valence.train.ses, main=paste("valence", "SES"), sub=paste("MAPE:",round(valence.ses.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(valence)
+
+#SARIMA
+valence.sarima.model <- auto.arima(valence.train)
+valence.sarima <- forecast(valence.sarima.model, h=nTest)
+valence.sarima.mape = mape(valence.sarima$mean, valence.test)
+plot(valence.sarima, main=paste("valence", "SARIMA"), sub=paste("MAPE:", round(valence.sarima.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(valence)
+
+
+#Neural Network
+valence.train.nn <- elm(valence.train)
+valence.nn.forecast <- forecast(valence.train.nn, h=nTest)
+valence.nn.mape = mape(valence.nn.forecast$mean, valence.test)
+plot(valence, main=paste("valence", "NN"), sub=paste("MAPE:", round(valence.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(ts(valence.nn.forecast$mean, start=1921+nTrain), col=2)
+```
+
+Tempo
+```{r}
+tempo = ts(as.numeric(feature_quantiles[,"tempo"]) , start=1921)
+tempo.train = subset(tempo, start=1, end=nTrain)
+tempo.test = subset(tempo, start = (nTrain+1), end =(nTrain+nTest))
+
+#SES
+tempo.train.ses <- ses(tempo.train, h=nTest)
+tempo.ses.mape = mape(tempo.train.ses$mean, tempo.test)
+plot(tempo.train.ses, main=paste("tempo", "SES"), sub=paste("MAPE:",round(tempo.ses.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(tempo)
+
+#SARIMA
+tempo.sarima.model <- auto.arima(tempo.train)
+tempo.sarima <- forecast(tempo.sarima.model, h=nTest)
+tempo.sarima.mape = mape(tempo.sarima$mean, tempo.test)
+plot(tempo.sarima, main=paste("tempo", "SARIMA"), sub=paste("MAPE:", round(tempo.sarima.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(tempo)
+
+
+#Neural Network
+tempo.train.nn <- elm(tempo.train)
+tempo.nn.forecast <- forecast(tempo.train.nn, h=nTest)
+tempo.nn.mape = mape(tempo.nn.forecast$mean, tempo.test)
+plot(tempo, main=paste("tempo", "NN"), sub=paste("MAPE:", round(tempo.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(ts(tempo.nn.forecast$mean, start=1921+nTrain), col=2)
+```
+
+Liveness
+```{r}
+liveness = ts(as.numeric(feature_quantiles[,"liveness"]) , start=1921)
+liveness.train = subset(liveness, start=1, end=nTrain)
+liveness.test = subset(liveness, start = (nTrain+1), end =(nTrain+nTest))
+
+#SES
+liveness.train.ses <- ses(liveness.train, h=nTest)
+liveness.ses.mape = mape(liveness.train.ses$mean, liveness.test)
+plot(liveness.train.ses, main=paste("liveness", "SES"), sub=paste("MAPE:",round(liveness.ses.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(liveness)
+
+#SARIMA
+liveness.sarima.model <- auto.arima(liveness.train)
+liveness.sarima <- forecast(liveness.sarima.model, h=nTest)
+liveness.sarima.mape = mape(liveness.sarima$mean, liveness.test)
+plot(liveness.sarima, main=paste("liveness", "SARIMA"), sub=paste("MAPE:", round(liveness.sarima.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(liveness)
+
+
+#Neural Network
+liveness.train.nn <- elm(liveness.train)
+liveness.nn.forecast <- forecast(liveness.train.nn, h=nTest)
+liveness.nn.mape = mape(liveness.nn.forecast$mean, liveness.test)
+plot(liveness, main=paste("liveness", "NN"), sub=paste("MAPE:", round(liveness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(ts(liveness.nn.forecast$mean, start=1921+nTrain), col=2)
+```
+
+Loudness
+```{r}
+loudness = ts(as.numeric(feature_quantiles[,"loudness"]) , start=1921)
+loudness.train = subset(loudness, start=1, end=nTrain)
+loudness.test = subset(loudness, start = (nTrain+1), end =(nTrain+nTest))
+
+#SES
+loudness.train.ses <- ses(loudness.train, h=nTest)
+loudness.ses.mape = mape(loudness.train.ses$mean, loudness.test)
+plot(loudness.train.ses, main=paste("loudness", "SES"), sub=paste("MAPE:",round(loudness.ses.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(loudness)
+
+#SARIMA
+loudness.sarima.model <- auto.arima(loudness.train)
+loudness.sarima <- forecast(loudness.sarima.model, h=nTest)
+loudness.sarima.mape = mape(loudness.sarima$mean, loudness.test)
+plot(loudness.sarima, main=paste("loudness", "SARIMA"), sub=paste("MAPE:", round(loudness.sarima.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(loudness)
+
+
+#Neural Network
+loudness.train.nn <- elm(loudness.train)
+loudness.nn.forecast <- forecast(loudness.train.nn, h=nTest)
+loudness.nn.mape = mape(loudness.nn.forecast$mean, loudness.test)
+plot(loudness, main=paste("loudness", "NN"), sub=paste("MAPE:", round(loudness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(ts(loudness.nn.forecast$mean, start=1921+nTrain), col=2)
+```
+
+Speechiness
+```{r}
+speechiness = ts(as.numeric(feature_quantiles[,"speechiness"]) , start=1921)
+speechiness.train = subset(speechiness, start=1, end=nTrain)
+speechiness.test = subset(speechiness, start = (nTrain+1), end =(nTrain+nTest))
+
+#SES
+speechiness.train.ses <- ses(speechiness.train, h=nTest)
+speechiness.ses.mape = mape(speechiness.train.ses$mean, speechiness.test)
+plot(speechiness.train.ses, main=paste("speechiness", "SES"), sub=paste("MAPE:",round(speechiness.ses.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(speechiness)
+
+#SARIMA
+speechiness.sarima.model <- auto.arima(speechiness.train)
+speechiness.sarima <- forecast(speechiness.sarima.model, h=nTest)
+speechiness.sarima.mape = mape(speechiness.sarima$mean, speechiness.test)
+plot(speechiness.sarima, main=paste("speechiness", "SARIMA"), sub=paste("MAPE:", round(speechiness.sarima.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(speechiness)
+
+
+#Neural Network
+speechiness.train.nn <- elm(speechiness.train)
+speechiness.nn.forecast <- forecast(speechiness.train.nn, h=nTest)
+speechiness.nn.mape = mape(speechiness.nn.forecast$mean, speechiness.test)
+plot(speechiness, main=paste("speechiness", "NN"), sub=paste("MAPE:", round(speechiness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
+lines(ts(speechiness.nn.forecast$mean, start=1921+nTrain), col=2)
+```
 
 Creating linear models for predicting popular features based on their current feature
 ```{r}
-
 #Energy
 best_energy = ts(as.numeric(best_feature_quantiles[,"energy"]), start=1921, end=2020) 
 best_energy.train = subset(best_energy, start = 1, end = nTrain)
@@ -376,17 +544,178 @@ overall = energy.train
 energy.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = energy.test)
 best_energy.test.predict <- predict(energy.lm, newdata=test_df, interval="prediction")
-plot(best_energy)
+best_energy_test_predict.mape <- mape(best_energy.test[1:length(best_energy.test)], best_energy.test.predict)
+plot(best_energy,xlab="Year", ylab="Energy", main=paste("Energy Population Prediction"), sub = paste("MAPE: ", round(best_energy_test_predict.mape*100, 3), "%"))
 lines(ts(best_energy.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
-# Get MAPE
-# Label chart
-# Predict future values (5 years?)
-
-
 #Duration
+best_duration = ts(as.numeric(best_feature_quantiles[,"duration_ms"]), start=1921, end=2020) 
+best_duration.train = subset(best_duration, start = 1, end = nTrain)
+best_duration.test = subset(best_duration, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_duration.train, overall = duration.train)
+
+best = best_duration.train
+overall = duration.train
+
+duration.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = duration.test)
+best_duration.test.predict <- predict(duration.lm, newdata=test_df, interval="prediction")
+best_duration_test.predict.mape <- mape(best_duration.test[1:length(best_duration.test)], best_duration.test.predict)
+plot(best_duration,xlab="Year", ylab="duration", main=paste("duration Popularity Prediction"), sub = paste("MAPE: ", round(best_duration_test.predict.mape*100, 3), "%"))
+lines(ts(best_duration.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+
+#Accousticness
+sssbest_acousticness = ts(as.numeric(best_feature_quantiles[,"acousticness"]), start=1921, end=2020) 
+best_acousticness.train = subset(best_acousticness, start = 1, end = nTrain)
+best_acousticness.test = subset(best_acousticness, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_acousticness.train, overall = acousticness.train)
+
+best = best_acousticness.train
+overall = acousticness.train
+
+acousticness.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = acousticness.test)
+best_acousticness.test.predict <- predict(acousticness.lm, newdata=test_df, interval="prediction")
+best_acousticness_test.predict.mape <- mape(best_acousticness.test[1:length(best_acousticness.test)], best_acousticness.test.predict)
+plot(best_acousticness,xlab="Year", ylab="acousticness", main=paste("acousticness Popularity Prediction"), sub = paste("MAPE: ", round(best_acousticness_test.predict.mape*100, 3), "%"))
+lines(ts(best_acousticness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+
+#Valence
+best_valence = ts(as.numeric(best_feature_quantiles[,"valence"]), start=1921, end=2020) 
+best_valence.train = subset(best_valence, start = 1, end = nTrain)
+best_valence.test = subset(best_valence, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_valence.train, overall = valence.train)
+
+best = best_valence.train
+overall = valence.train
+
+valence.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = valence.test)
+best_valence.test.predict <- predict(valence.lm, newdata=test_df, interval="prediction")
+best_valence_test.predict.mape <- mape(best_valence.test[1:length(best_valence.test)], best_valence.test.predict)
+plot(best_valence,xlab="Year", ylab="Valence", main=paste("Valence Popularity Prediction"), sub = paste("MAPE: ", round(best_valence_test.predict.mape*100, 3), "%"))
+lines(ts(best_valence.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+```
 
 
+```{r}
 
 ```
 
+
+```{r}
+#Tempo
+best_tempo = ts(as.numeric(best_feature_quantiles[,"tempo"]), start=1921, end=2020) 
+best_tempo.train = subset(best_tempo, start = 1, end = nTrain)
+best_tempo.test = subset(best_tempo, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_tempo.train, overall = tempo.train)
+
+best = best_tempo.train
+overall = tempo.train
+
+tempo.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = tempo.test)
+best_tempo.test.predict <- predict(tempo.lm, newdata=test_df, interval="prediction")
+best_tempo_test.predict.mape <- mape(best_tempo.test[1:length(best_tempo.test)], best_tempo.test.predict)
+plot(best_tempo,xlab="Year", ylab="tempo", main=paste("tempo Popularity Prediction"), sub = paste("MAPE: ", round(best_tempo_test.predict.mape*100, 3), "%"))
+lines(ts(best_tempo.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+
+#Liveness
+best_liveness = ts(as.numeric(best_feature_quantiles[,"liveness"]), start=1921, end=2020) 
+best_liveness.train = subset(best_liveness, start = 1, end = nTrain)
+best_liveness.test = subset(best_liveness, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_liveness.train, overall = liveness.train)
+
+best = best_liveness.train
+overall = liveness.train
+
+liveness.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = liveness.test)
+best_liveness.test.predict <- predict(liveness.lm, newdata=test_df, interval="prediction")
+best_liveness_test.predict.mape <- mape(best_liveness.test[1:length(best_liveness.test)], best_liveness.test.predict)
+plot(best_liveness,xlab="Year", ylab="liveness", main=paste("liveness Popularity Prediction"), sub = paste("MAPE: ", round(best_liveness_test.predict.mape*100, 3), "%"))
+lines(ts(best_liveness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+
+#Loudness
+best_loudness = ts(as.numeric(best_feature_quantiles[,"loudness"]), start=1921, end=2020) 
+best_loudness.train = subset(best_loudness, start = 1, end = nTrain)
+best_loudness.test = subset(best_loudness, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_loudness.train, overall = loudness.train)
+
+best = best_loudness.train
+overall = loudness.train
+
+loudness.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = loudness.test)
+best_loudness.test.predict <- predict(loudness.lm, newdata=test_df, interval="prediction")
+best_loudness_test.predict.mape <- mape(best_loudness.test[1:length(best_loudness.test)], best_loudness.test.predict)
+plot(best_loudness,xlab="Year", ylab="loudness", main=paste("loudness Popularity Prediction"), sub = paste("MAPE: ", round(best_loudness_test.predict.mape*100, 3), "%"))
+lines(ts(best_loudness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+
+#Speechiness
+best_speechiness = ts(as.numeric(best_feature_quantiles[,"speechiness"]), start=1921, end=2020) 
+best_speechiness.train = subset(best_speechiness, start = 1, end = nTrain)
+best_speechiness.test = subset(best_speechiness, start = nTrain+1, end = nTrain+nTest)
+train_df = data.frame(best = best_speechiness.train, overall = speechiness.train)
+
+best = best_speechiness.train
+overall = speechiness.train
+
+speechiness.lm <- lm(best ~ overall)
+test_df <- data.frame(overall = speechiness.test)
+best_speechiness.test.predict <- predict(speechiness.lm, newdata=test_df, interval="prediction")
+best_speechiness_test.predict.mape <- mape(best_speechiness.test[1:length(best_speechiness.test)], best_speechiness.test.predict)
+plot(best_speechiness,xlab="Year", ylab="speechiness", main=paste("speechiness Popularity Prediction"), sub = paste("MAPE: ", round(best_speechiness_test.predict.mape*100, 3), "%"))
+lines(ts(best_speechiness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
+```
+
+Predict features for the overall market trends for the next five years.
+We will only use models that had the low enough MAPEs based on potential timeseries models
+
+
+
+Energy: NN Model 
+```{r}
+energy.nn <- elm(energy)
+energy.nn.predict <- forecast(energy.nn, h=nTest)
+plot(energy.nn.predict, main=paste("Energy", "NN"), xlab="Year", ylab="Median Value")
+lines(energy)
+```
+
+Duration: NN Model
+```{r}
+duration.nn <- elm(duration)
+duration.nn.predict <- forecast(duration.nn, h=nTest)
+plot(duration.nn.predict, main=paste("Duration", "NN"), xlab="Year", ylab="Median Value")
+```
+
+Tempo: SARIMA Model 
+```{r}
+tempo.sarima <- auto.arima(tempo)
+tempo.sarima.predict <- forecast(tempo.sarima, h=nTest)
+plot(tempo.sarima.predict, main=paste("Tempo", "SARIMA"), xlab="Year", ylab="Median Value")
+lines(tempo)
+```
+
+Valence: SARIMA Model 
+```{r}
+valence.sarima <- auto.arima(valence)
+valence.sarima.predict <- forecast(valence.sarima, h=nTest)
+plot(valence.sarima.predict, main=paste("Valence", "SARIMA"), xlab="Year", ylab="Median Value")
+lines(valence)
+```
+
+Liveness: SARIMA Model
+```{r}
+liveness.sarima <- auto.arima(liveness)
+liveness.sarima.predict <- forecast(liveness.sarima, h=nTest)
+plot(liveness.sarima.predict, main=paste("liveness", "SARIMA"), xlab="Year", ylab="Median Value")
+lines(liveness)
+```
+
+Loudness: SES Model 
+```{r}
+loudness.ses <- ses(loudness, h=nTest)
+plot(loudness.ses, main=paste("loudness", "SES"), xlab="Year", ylab="Median Value")
+lines(loudness)
+```
