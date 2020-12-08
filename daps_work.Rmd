@@ -544,7 +544,7 @@ overall = energy.train
 energy.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = energy.test)
 best_energy.test.predict <- predict(energy.lm, newdata=test_df, interval="prediction")
-best_energy_test_predict.mape <- mape(best_energy.test[1:length(best_energy.test)], best_energy.test.predict)
+best_energy_test_predict.mape <- mape(best_energy.test[1:length(best_energy.test)], best_energy.test.predict[,1])
 plot(best_energy,xlab="Year", ylab="Energy", main=paste("Energy Population Prediction"), sub = paste("MAPE: ", round(best_energy_test_predict.mape*100, 3), "%"))
 lines(ts(best_energy.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
@@ -560,12 +560,12 @@ overall = duration.train
 duration.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = duration.test)
 best_duration.test.predict <- predict(duration.lm, newdata=test_df, interval="prediction")
-best_duration_test.predict.mape <- mape(best_duration.test[1:length(best_duration.test)], best_duration.test.predict)
+best_duration_test.predict.mape <- mape(best_duration.test[1:length(best_duration.test)], best_duration.test.predict[,1])
 plot(best_duration,xlab="Year", ylab="duration", main=paste("duration Popularity Prediction"), sub = paste("MAPE: ", round(best_duration_test.predict.mape*100, 3), "%"))
 lines(ts(best_duration.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
 #Accousticness
-sssbest_acousticness = ts(as.numeric(best_feature_quantiles[,"acousticness"]), start=1921, end=2020) 
+best_acousticness = ts(as.numeric(best_feature_quantiles[,"acousticness"]), start=1921, end=2020) 
 best_acousticness.train = subset(best_acousticness, start = 1, end = nTrain)
 best_acousticness.test = subset(best_acousticness, start = nTrain+1, end = nTrain+nTest)
 train_df = data.frame(best = best_acousticness.train, overall = acousticness.train)
@@ -576,7 +576,7 @@ overall = acousticness.train
 acousticness.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = acousticness.test)
 best_acousticness.test.predict <- predict(acousticness.lm, newdata=test_df, interval="prediction")
-best_acousticness_test.predict.mape <- mape(best_acousticness.test[1:length(best_acousticness.test)], best_acousticness.test.predict)
+best_acousticness_test.predict.mape <- mape(best_acousticness.test[1:length(best_acousticness.test)], best_acousticness.test.predict[,1])
 plot(best_acousticness,xlab="Year", ylab="acousticness", main=paste("acousticness Popularity Prediction"), sub = paste("MAPE: ", round(best_acousticness_test.predict.mape*100, 3), "%"))
 lines(ts(best_acousticness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
@@ -592,18 +592,10 @@ overall = valence.train
 valence.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = valence.test)
 best_valence.test.predict <- predict(valence.lm, newdata=test_df, interval="prediction")
-best_valence_test.predict.mape <- mape(best_valence.test[1:length(best_valence.test)], best_valence.test.predict)
+best_valence_test.predict.mape <- mape(best_valence.test[1:length(best_valence.test)], best_valence.test.predict[,1])
 plot(best_valence,xlab="Year", ylab="Valence", main=paste("Valence Popularity Prediction"), sub = paste("MAPE: ", round(best_valence_test.predict.mape*100, 3), "%"))
 lines(ts(best_valence.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
-```
 
-
-```{r}
-
-```
-
-
-```{r}
 #Tempo
 best_tempo = ts(as.numeric(best_feature_quantiles[,"tempo"]), start=1921, end=2020) 
 best_tempo.train = subset(best_tempo, start = 1, end = nTrain)
@@ -616,7 +608,7 @@ overall = tempo.train
 tempo.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = tempo.test)
 best_tempo.test.predict <- predict(tempo.lm, newdata=test_df, interval="prediction")
-best_tempo_test.predict.mape <- mape(best_tempo.test[1:length(best_tempo.test)], best_tempo.test.predict)
+best_tempo_test.predict.mape <- mape(best_tempo.test[1:length(best_tempo.test)], best_tempo.test.predict[,1])
 plot(best_tempo,xlab="Year", ylab="tempo", main=paste("tempo Popularity Prediction"), sub = paste("MAPE: ", round(best_tempo_test.predict.mape*100, 3), "%"))
 lines(ts(best_tempo.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
@@ -632,7 +624,7 @@ overall = liveness.train
 liveness.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = liveness.test)
 best_liveness.test.predict <- predict(liveness.lm, newdata=test_df, interval="prediction")
-best_liveness_test.predict.mape <- mape(best_liveness.test[1:length(best_liveness.test)], best_liveness.test.predict)
+best_liveness_test.predict.mape <- mape(best_liveness.test[1:length(best_liveness.test)], best_liveness.test.predict[,1])
 plot(best_liveness,xlab="Year", ylab="liveness", main=paste("liveness Popularity Prediction"), sub = paste("MAPE: ", round(best_liveness_test.predict.mape*100, 3), "%"))
 lines(ts(best_liveness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
@@ -648,7 +640,7 @@ overall = loudness.train
 loudness.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = loudness.test)
 best_loudness.test.predict <- predict(loudness.lm, newdata=test_df, interval="prediction")
-best_loudness_test.predict.mape <- mape(best_loudness.test[1:length(best_loudness.test)], best_loudness.test.predict)
+best_loudness_test.predict.mape <- mape(best_loudness.test[1:length(best_loudness.test)], best_loudness.test.predict[,1])
 plot(best_loudness,xlab="Year", ylab="loudness", main=paste("loudness Popularity Prediction"), sub = paste("MAPE: ", round(best_loudness_test.predict.mape*100, 3), "%"))
 lines(ts(best_loudness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 
@@ -664,13 +656,13 @@ overall = speechiness.train
 speechiness.lm <- lm(best ~ overall)
 test_df <- data.frame(overall = speechiness.test)
 best_speechiness.test.predict <- predict(speechiness.lm, newdata=test_df, interval="prediction")
-best_speechiness_test.predict.mape <- mape(best_speechiness.test[1:length(best_speechiness.test)], best_speechiness.test.predict)
+best_speechiness_test.predict.mape <- mape(best_speechiness.test[1:length(best_speechiness.test)], best_speechiness.test.predict[,1])
 plot(best_speechiness,xlab="Year", ylab="speechiness", main=paste("speechiness Popularity Prediction"), sub = paste("MAPE: ", round(best_speechiness_test.predict.mape*100, 3), "%"))
 lines(ts(best_speechiness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 ```
 
 Predict features for the overall market trends for the next five years.
-We will only use models that had the low enough MAPEs based on potential timeseries models
+We will only use models that had the low enough MAPEs (10% chosen as a threshold) based on potential timeseries models.
 
 
 
@@ -718,4 +710,121 @@ Loudness: SES Model
 loudness.ses <- ses(loudness, h=nTest)
 plot(loudness.ses, main=paste("loudness", "SES"), xlab="Year", ylab="Median Value")
 lines(loudness)
+```
+
+
+
+
+
+Now predicting the median values  for the *most popular songs* for this set of features.
+
+Energy
+```{r}
+best = best_energy
+overall = energy
+
+
+energy.lm <- lm(best ~ overall)
+predict_df <- data.frame(overall = energy.nn.predict$mean)
+energy.predict <- predict(energy.lm, newdata=predict_df, interval="prediction")
+
+smallest = min(min(best), min(overall))
+biggest = max(max(best), max(overall))
+plot(energy, xlab="Year", ylab="Median Value", ylim=c(smallest, biggest), main="Most Popular Song's Energy Feature Prediction", sub=paste("Projected median feature value for most popular songs:", paste(round(energy.nn.predict$mean, 3), collapse=",") ))
+lines(best_energy, col = 2)
+lines(ts(energy.predict[,1], start=2020+1, end=2020+nTest), col = 3)
+legend("bottomright", lty=1, col=c(1,2,3), legend=c("Overall", "Most Popular", "Most Popular Projection"))
+```
+
+
+Duration
+```{r}
+best = best_duration
+overall = duration
+
+duration.lm <- lm(best ~ overall)
+predict_df <- data.frame(overall = duration.nn.predict$mean)
+duration.predict <- predict(duration.lm, newdata=predict_df, interval="prediction")
+
+smallest = min(min(best), min(overall))
+biggest = max(max(best), max(overall))
+plot(duration, xlab="Year", ylab="Median Value", ylim=c(smallest, biggest), main="Most Popular Song's Duration Feature Prediction", sub=paste("Projected median feature value for most popular songs:", paste(round(duration.nn.predict$mean), collapse=",") ))
+lines(best_duration, col = 2)
+lines(ts(duration.predict[,1], start=2020+1, end=2020+nTest), col = 3)
+legend("topright", lty=1, col=c(1,2,3), legend=c("Overall", "Most Popular", "Most Popular Projection"))
+```
+
+
+Tempo
+```{r}
+best = best_tempo
+overall = tempo
+
+tempo.lm <- lm(best ~ overall)
+predict_df <- data.frame(overall = tempo.sarima.predict$mean)
+tempo.predict <- predict(tempo.lm, newdata=predict_df, interval="prediction")
+
+
+smallest = min(min(best), min(overall))
+biggest = max(max(best), max(overall))
+plot(tempo, xlab="Year", ylab="Median Value", ylim=c(smallest, biggest), main="Most Popular Song's Tempo Feature Prediction", sub=paste("Projected median feature value for most popular songs:", paste(round(tempo.sarima.predict$mean), collapse=",") ))
+lines(best_tempo, col = 2)
+lines(ts(tempo.predict[,1], start=2020+1, end=2020+nTest), col = 3)
+legend("bottomright", lty=1, col=c(1,2,3), legend=c("Overall", "Most Popular", "Most Popular Projection"))
+```
+
+
+Valence
+```{r}
+best = best_valence
+overall = valence
+
+valence.lm <- lm(best ~ overall)
+predict_df <- data.frame(overall = valence.sarima.predict$mean)
+valence.predict <- predict(valence.lm, newdata=predict_df, interval="prediction")
+
+
+smallest = min(min(best), min(overall))
+biggest = max(max(best), max(overall))
+plot(valence, xlab="Year", ylab="Median Value", ylim=c(smallest, biggest), main="Most Popular Song's valence Feature Prediction", sub=paste("Projected median feature value for most popular songs:", paste(round(valence.sarima.predict$mean,3), collapse=",") ))
+lines(best_valence, col = 2)
+lines(ts(valence.predict[,1], start=2020+1, end=2020+nTest), col = 3)
+legend("bottomright", lty=1, col=c(1,2,3), legend=c("Overall", "Most Popular", "Most Popular Projection"))
+```
+
+
+Liveness
+```{r}
+best = best_liveness
+overall = liveness
+
+liveness.lm <- lm(best ~ overall)
+predict_df <- data.frame(overall = liveness.sarima.predict$mean)
+liveness.predict <- predict(liveness.lm, newdata=predict_df, interval="prediction")
+
+smallest = min(min(best), min(overall))
+biggest = max(max(best), max(overall))
+plot(liveness, xlab="Year", ylab="Median Value", ylim=c(smallest, biggest), main="Most Popular Song's liveness Feature Prediction", sub=paste("Projected median feature value for most popular songs:", paste(round(liveness.sarima.predict$mean,3), collapse=",") ))
+lines(best_liveness, col = 2)
+lines(ts(liveness.predict[,1], start=2020+1, end=2020+nTest), col = 3)
+legend("topright", lty=1, col=c(1,2,3), legend=c("Overall", "Most Popular", "Most Popular Projection"))
+```
+
+
+
+Loudness
+```{r}
+best = best_loudness
+overall = loudness
+
+loudness.lm <- lm(best ~ overall)
+predict_df <- data.frame(overall = loudness.ses$mean)
+loudness.predict <- predict(loudness.lm, newdata=predict_df, interval="prediction")
+
+smallest = min(min(best), min(overall))
+biggest = max(max(best), max(overall))
+plot(loudness, xlab="Year", ylab="Median Value", ylim=c(smallest, biggest), main="Most Popular Song's loudness Feature Prediction", sub=paste("Projected median feature value for most popular songs:", paste(round(loudness.ses$mean,1), collapse=",") ))
+lines(best_loudness, col = 2)
+lines(ts(loudness.predict[,1], start=2020+1, end=2020+nTest), col = 3)
+legend("bottomright", lty=1, col=c(1,2,3), legend=c("Overall", "Most Popular", "Most Popular Projection"))
 ```
