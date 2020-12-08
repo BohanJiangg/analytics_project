@@ -71,8 +71,8 @@ df <- read.csv("./data/data.csv")
 q1s = data.frame(matrix(ncol=3, nrow=0))
 medians = data.frame(matrix(ncol=3, nrow=0))
 q3s = data.frame(matrix(ncol=3, nrow=0))
-feature_names = c("acousticness", "danceability", "instrumentalness", "energy",
-                  "duration_ms", "valence", "tempo", "liveness", "loudness", "speechiness")
+feature_names = sort(c("acousticness", "danceability", "instrumentalness", "energy",
+                  "duration_ms", "valence", "tempo", "liveness", "loudness", "speechiness"))
 for(i in 1921:2020){
   annual_val = subset(df, year==i)
 
@@ -179,6 +179,10 @@ for(i in 1:length(feature_names)){
 }
 legend("topright", lty=1, col=c(1,2,3,4,5,6,7,8,9,10), legend=feature_names)
 ```
+####Insights:  
+Both these graphs appear to have similar shapes, with instrumentalness being the most widely varying, and the rest varying marginally. However, for the speechiness variable, for the overall set of songs its median value varies much less than the median value for the most popular songs.
+
+
 
 ## Now plotting absolute values for each feature as the median values for overall, as well as just the most popular songs.
 ### MAPE is the difference between the most popular median and the overall median; R is the correlation between overall median and most popular median.
