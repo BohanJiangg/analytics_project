@@ -251,6 +251,17 @@ for(i in 1:length(feature_names)){
   title()
 }
 ```
+##### Insights: 
+**Acousticness**: A high MAPE when comparing the most popular songs with the overall trends indicates that there is a large difference between the two (likely caused in the 1930s-1950s). The R value is high which means there is a high correlation between the most popular songs and the overall songs. Because acousticness seems to impact popular songs and there is a large change over time, we will move forward with predicting the acousticness of songs in the future. 
+**Danceability**: A low MAPE indicates not a lot of difference between popular songs and overall songs danceability. However, a high R value means there is a high correlation between the most popular songs and the overall songs. Because danceability seems to impact popular songs (due to the high correlation) and there is a some change over time, we will move forward with predicting the danceability of songs in the future. 
+**Duration (ms)**: There is a low MAPE which means that popular songs have about the same length as all other songs. The R value is relatively high which means there is a high correlation between the most popular songs and the overall songs. Because duration seems to impact popular songs (due to the high correlation) and there is a some change over time, we will move forward with predicting the duration of songs in the future. 
+**Energy**: A high MAPE when comparing the most popular songs with the overall trends indicates that there is a large difference between the two. The R value is high which means there is a high correlation between the most popular songs and the overall songs. Because energy seems to impact popular songs (due to the high MAPE and correlation) and there are large changes over time, we will move forward with predicting the energy of songs in the future. 
+**Instrumentalness**: The popular songs and overall music trends are pretty much the exact same after the 1950s, indicating that instrumentalness does not affect popularity. Because instrumentalness does not impact popular songs and there is a flatline after the 1950s (indicating no change over time), we will not move forward with predicting the instrumentalness of songs in the future. 
+**Liveness**: A high MAPE when comparing the most popular songs with the overall trends indicates that there is a large difference between the two. The R value is high which means there is a high correlation between the most popular songs and the overall songs. Because liveness seems to impact popular songs (due to the high MAPE and correlation) and there is a some change over time, we will move forward with predicting the liveness of songs in the future. 
+**Loudness**: A high MAPE when comparing the most popular songs with the overall trends indicates that there is a large difference between the two. The R value is high which means there is a high correlation between the most popular songs and the overall songs. Because loudness seems to impact popular songs (due to the high MAPE and correlation) and there is a significant change over time, we will move forward with predicting the loudness of songs in the future. 
+**Speechiness**: A high MAPE when comparing the most popular songs with the overall trends indicates that there is a large difference between the two. It's important to note that the driver of the high MAPE is due to the two large spikes between 1930 and 1950, while speechiness levels between popular songs and the overall industry in the last 70 years have generally been the same. The R value is low which means there is a low correlation between the most popular songs and the overall songs. We will not move forward with predicting speechiness, due to the lack of change in speechiness over time and low R.
+**Tempo**: The MAPE is low, inidcating that there isn't a significant difference in tempo between the popular songs and the overall music trends. The R is relatively high, so there is possibly a correlation between popular songs and the overall songs. Because tempo seems to impact popular songs (due to the high correlation) and there is a some change over time, we will move forward with predicting the tempo of songs in the future. 
+**Valence**: A high MAPE when comparing the most popular songs with the overall trends indicates that there is a large difference between the two in terms of valence. The R value is high which means there is a high correlation between the most popular songs and the overall songs. Because valence seems to impact popular songs (due to the high MAPE and high correlation) and there is a some change over time, we will move forward with predicting the valence of songs in the future. 
 
 
 
@@ -413,6 +424,8 @@ valence.nn.mape = mape(valence.nn.forecast$mean, valence.test)
 plot(valence, main=paste("valence", "NN"), sub=paste("MAPE:", round(valence.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
 lines(ts(valence.nn.forecast$mean, start=1921+nTrain), col=2)
 ```
+##### Insights:
+Relatively lower MAPE indicates that we can predict valence over time. The best model to use is the SARIMA model because it has the lowest MAPE at 6.7%. 
 
 ## Tempo model
 
@@ -442,6 +455,7 @@ tempo.nn.mape = mape(tempo.nn.forecast$mean, tempo.test)
 plot(tempo, main=paste("tempo", "NN"), sub=paste("MAPE:", round(tempo.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
 lines(ts(tempo.nn.forecast$mean, start=1921+nTrain), col=2)
 ```
+##### Insights:
 Here we see that the best method to predict future tempo median values for the overall data set is through SES. Given that this best MAPE is roughly 1%, this feature can be fairly reliably forecast into the future.
   
 
@@ -472,6 +486,8 @@ liveness.nn.mape = mape(liveness.nn.forecast$mean, liveness.test)
 plot(liveness, main=paste("liveness", "NN"), sub=paste("MAPE:", round(liveness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
 lines(ts(liveness.nn.forecast$mean, start=1921+nTrain), col=2)
 ```
+##### Insights:
+Here we see that the best method to predict future liveness median values for the overall data set is through SARIMA Given that this best MAPE is roughly 2.6%, this feature can be fairly reliably forecast into the future.
 
 ## Loudness
 ```{r}
@@ -500,35 +516,9 @@ loudness.nn.mape = mape(loudness.nn.forecast$mean, loudness.test)
 plot(loudness, main=paste("loudness", "NN"), sub=paste("MAPE:", round(loudness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
 lines(ts(loudness.nn.forecast$mean, start=1921+nTrain), col=2)
 ```
-
-## Speechiness
-```{r}
-speechiness = ts(as.numeric(feature_quantiles[,"speechiness"]) , start=1921)
-speechiness.train = subset(speechiness, start=1, end=nTrain)
-speechiness.test = subset(speechiness, start = (nTrain+1), end =(nTrain+nTest))
-
-#SES
-speechiness.train.ses <- ses(speechiness.train, h=nTest)
-speechiness.ses.mape = mape(speechiness.train.ses$mean, speechiness.test)
-plot(speechiness.train.ses, main=paste("speechiness", "SES"), sub=paste("MAPE:",round(speechiness.ses.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
-lines(speechiness)
-
-#SARIMA
-speechiness.sarima.model <- auto.arima(speechiness.train)
-speechiness.sarima <- forecast(speechiness.sarima.model, h=nTest)
-speechiness.sarima.mape = mape(speechiness.sarima$mean, speechiness.test)
-plot(speechiness.sarima, main=paste("speechiness", "SARIMA"), sub=paste("MAPE:", round(speechiness.sarima.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
-lines(speechiness)
-
-
-#Neural Network
-speechiness.train.nn <- elm(speechiness.train)
-speechiness.nn.forecast <- forecast(speechiness.train.nn, h=nTest)
-speechiness.nn.mape = mape(speechiness.nn.forecast$mean, speechiness.test)
-plot(speechiness, main=paste("speechiness", "NN"), sub=paste("MAPE:", round(speechiness.nn.mape*100, 3), "%"), xlab="Year", ylab="Median Value")
-lines(ts(speechiness.nn.forecast$mean, start=1921+nTrain), col=2)
-```
-
+##### Insights:
+Here we see that the best method to predict future loudness median values for the overall data set is through SES Given that this best MAPE is roughly 5%, this feature can be fairly reliably forecast into the future.
+  
 # Linear Model for Overall Feature Median-->Most Popular Songs' Feature Median
 ### We will only consider models that had a low enough MAPEs (10% chosen as a threshold) in their best timeseries forecasting model.
 ### Here MAPE is the difference between the actual median for most popular songs and the predicted median.
@@ -646,6 +636,14 @@ best_loudness_test.predict.mape <- mape(best_loudness.test[1:length(best_loudnes
 plot(best_loudness,xlab="Year", ylab="loudness", main=paste("loudness Popularity Prediction"), sub = paste("MAPE: ", round(best_loudness_test.predict.mape*100, 3), "%"))
 lines(ts(best_loudness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col = 2)
 ```
+##### Insights:
+**Energy**: A low MAPE around 4% indicates that we can use the overall trend to identify the energy of popular songs
+**Duration**: A low MAPE around 1% indicates that we can use the overall trend to identify the duration of popular songs
+**Acousticness**: A high MAPE around 16% indicates that we can not use the overall trend to identify the acousticness of popular songs. We will not include predictions for acousticness of popular songs.
+**Valence**: A low MAPE around 4.6% indicates that we can use the overall trend to identify the valence of popular songs
+**Tempo**: A low MAPE around 2% indicates that we can use the overall trend to identify the tempo of popular songs
+**Liveness**: A low MAPE around 4.3% indicates that we can use the overall trend to identify the liveness of popular songs
+**Loudness**: A low MAPE around 5% indicates that we can use the overall trend to identify the loudness of popular songs
 
 # Predict features for the overall market trends for the next five years.
 ### Only including features whose trained linear models had a MAPE below 10%, as these are the features whose most popular medians will be most reliably predicted by their forecast overall values.
