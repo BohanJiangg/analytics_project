@@ -3,16 +3,16 @@ title: "Spotify - Music of the Future"
 output: html_notebook
 author: Rachel Liu, Bohan Jiang, Dapo Folami, Justin Li
 team: Team 4 - CS Duals
-date: December 4, 2020
+date: December 9th, 2020
 ---
 
 ##### *Note that it may take a significant amount of time and processing power to run this entire notebook, due to the number of models trained.* 
 
-### 1. Project Value and Impact
+## **Project Value and Impact**
 The overarching objective for this project is to predict the next hit songs and understand what features drives popularity over time. This will give music professionals (music producer, song writer, singer, etc) a data-driven approach to be successful in the industry.
 In order to do this, we will be analyzing different variable relations, music trends over different decades, and feature significance with popularity. In the next few sections, we have shown in details different steps to clean the dataset, draw different insights/visualization based on initial analysis of the data, and create two predictive models to meet our objective. 
 
-### 2. Data Set Description
+## **Data Set Description**
 For this project, our team decided to take a data-driven approach to evaluate music. We are using the Spotify Dataset from 1921 to 2020 that consists of over 160,000 different tracks (from Kaggle). In order to stay consistent in the evaluation, all data was sourced from the Spotify Web API. The following set of data is combination of Primary, Numerical, Dummy(binary), and Categorical data. This allows us to explore different types of models and draw different insights. Here are all the variables that is included in the data set:
 
 Primary 
@@ -25,7 +25,7 @@ Numerical
     - duration_ms: majority range from 200,000 to 300,000
     - instrumentalness: range from 0(LOW) to 1(HIGH)
     - valence: range from 0(LOW) to 1(HIGH)
-    - popularity: range from 0(LOW) to 100(HIGH) The popularity is calculated by algorithm and is based, in the most part, on the total number of plays the track has had and how recent those plays are.Generally speaking, songs that are being played a lot now will have a higher popularity than songs that were played a lot in the past. Duplicate tracks (e.g. the same track from a single and an album) are rated independently. This is the main dependent variable.
+    - popularity: range from 0(LOW) to 100(HIGH). The popularity is calculated by algorithm and is based, in the most part, on the total number of plays the track has had and how recent those plays are.Generally speaking, songs that are being played a lot now will have a higher popularity than songs that were played a lot in the past. Duplicate tracks (e.g. the same track from a single and an album) are rated independently. This is the main dependent variable.
     - tempo: majority range from 50(LOW) to 150(high)
     - liveness: range from 0(LOW) to 1(HIGH)
     - loudness majority range from -60 to 0
@@ -41,6 +41,8 @@ Categorical
     - artists: the artist of the track
     - release_date: the date of release in yyyy-mm-dd format
     - name: the name of the track
+
+
 
 #### Further documentation for a specific description for each of the audio features can be found [here](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/). \n \n
 
@@ -485,6 +487,11 @@ From this K-means cluster analysis, we can see that the within-cluster sum-of-sq
 Thus, this means that the features in the dataset can categorize the songs in 3 main categories; there is therefore a lot of commonalities from the features of the observed songs. 
 
 
+
+
+
+
+
 ## **Model Building** 
 
 ### Timeseries trend Predictions
@@ -794,12 +801,8 @@ After training up to 30 models using an AutoML library that searches for optimal
 ##### Predicting Song Popularity: 
 Based on our chosen error metrics for model selection (RMSE, MAE, MASE), the best model that minimized these error metrics on the testing set was the Stacked Ensemble model trained via AutoML (RMSE: 8.44, MAE: 6.56). Our random forests model came at a close second with RMSE: X.XX, MAE: X.XX, followed by our gradient boosting model with RMSE: 8.54 and MAE: 6.61. Finally, our multiple linear regression model had RMSE: 8.98 and MAE: 6.98. \n
 \n
-The significance in the error metrics improvement from the linear model to the random forests model suggests that we were able to capture some significant non-linearities in the data. Nevertheless, despite the complexity of the Stacked Ensemble model, the improvement in prediction accuracy was minimal when compared to the random forests model. This suggests that the independent variables in the data do not fully capture the variance expressed in the dependent popularity variable. From the t-stat of the linear model and the feature importance plot of both the random forests and gradient boosting model, it was observed that year was by far the most significant factor used to explain popularity, which was seen as the average popularity of any song was highly correlated to the recency of the song's release date. Moreover, the low r2 in the leaderboard of the AutoML models and the 47% variance explained in the random forests model supports the fact that the independent variables used do not fully explain the popularity of a song. To further improve this prediction accuracy, we would suggest looking into alternative datasets (e.g. Twitter/Instagram mentions of a given song name) to supplement this dataset and potentially improve prediction accuracy. Finally, predicting song popularity to a very precise extent may be inherently difficult because of the various human influences/factors that dictates the popularity of any given song. 
+The significance in the error metrics improvement from the linear model to the random forests model suggests that we were able to capture some significant non-linearities in the data. Nevertheless, despite the complexity of the Stacked Ensemble model, the improvement in prediction accuracy was minimal when compared to the random forests model. This suggests that the independent variables in the data do not fully capture the variance expressed in the dependent popularity variable. From the t-stat of the linear model and the feature importance plot of both the random forests and gradient boosting model, it was observed that year was by far the most significant factor used to explain popularity, which was seen as the average popularity of any song was highly correlated to the recency of the song's release date. Moreover, the low r2 in the leaderboard of the AutoML models and the 47% variance explained in the random forests model supports the fact that the independent variables used do not fully explain the popularity of a song. To further improve this prediction accuracy, we would suggest looking into alternative datasets (e.g. Twitter/Instagram mentions of a given song name) to supplement this dataset and potentially improve prediction accuracy. Finally, predicting song popularity to a very precise extent may be inherently difficult because of the various human influences/factors that dictates the popularity of any given song. Nonetheless, we have built a very strong foundation for predicting song popularity and have learned many lessons along the way.
 \n
-
-##### 
-
-
 
 
 
