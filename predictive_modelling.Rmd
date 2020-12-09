@@ -286,6 +286,8 @@ df %>%
 - There are significant differences in the distribution of features in the given songs; for instance, songs tend to score low on instrumentalness and speechiness due to the high density near the lower side of the scale. In contrast, the songs seem to score along an almost uniform distribution for energy and valence.  
 - The distribution of observations per year is also not uniform (with fewer observations in earlier years and in 2020), which confirms our initial description of this data frame as an unbalanced panel dataset. \n
 
+<br />
+
 
 #### Look at distribution of our key variable of interest, popularity
 ```{r}
@@ -308,6 +310,7 @@ Log_pol
 
 Looking at the distribution for popularity, we have the blue dashed line representing the median and the red dashed line representing the mean. The two black lines represent the 0.25 and 0.75 quantiles, from left to right. The popularity density seems to be a bimodal distribution with a large number of songs with 0 popularity. This confirms our observations that a large quantity of older songs score low (or 0) in popularity. Otherwise, the distribution for popularity seems to have a large amount of kurtosis; this might be caused by the tendency for more recent songs (observations) to score higher in popularity, and also because Spotify is a fairly new platform (launched in 2008) that only gained a significant number of users in the past decade. \n
 
+<br />
 
 #### Look at overlapping distribution of key features in a 0 - 1 continuous scale
 ```{r}
@@ -335,6 +338,8 @@ correlated_density
 - Liveness has a large frequency towards the lower end of the spectrum, but has a significant skew and long right tail.
 - Danceability has a somewhat normal distribution but with large kurtosis.
 - Valence and Energy have somewhat uniform distributions, with songs categorized evenly thoughout the spectrum. \n
+
+<br />
 
 #### Look at distribution of Songs by Key
 ```{r}
@@ -386,6 +391,7 @@ ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_
 ```
 This chart indicates that for the top 10% of the most popular songs, the most frequent key used is actually C sharp, C, and G. 
 
+<br />
 
 
 #### Look at feature changes over time
@@ -423,7 +429,7 @@ plot_grid(trend_chart_track_popularity, trend_chart_danceability, trend_chart_en
 - In contrast, Instrumentalness, Liveness, and Acousticness have clearly trended down over time, highlighting that more recent songs score lower on these metrics.
 - There is no clear trend in the rest of the remaining features. \n
 
-
+<br />
 
 #### Look at Correlation of Features
 ```{r}
@@ -459,6 +465,7 @@ net_plot
 ```
 From this network plot, it can be seen that popularity, year, acousticness, loudness and energy are more strongly correlated as they are grouped together. There seems to also be a positive correlation between speechiness and explicitness. \n
 
+<br />
 
 #### Build a K-means Clustering model to further analyze the features
 
@@ -515,6 +522,7 @@ n_clust %>% rename(replace = c("y" = "Within_sum_of_squared_error", "clusters" =
 From this K-means cluster analysis, we can see that the within-cluster sum-of-squares error stabilizes when k becomes 3. 
 Thus, this means that the features in the dataset can categorize the songs in 3 main categories; there is therefore a lot of commonalities from the features of the observed songs. 
 
+<br />
 
 #### Time-series Visualization of all features
 ##### Plotting annual median values for each feature overall. Standardized such that each feature is on the same scale.
@@ -1130,7 +1138,7 @@ lines(ts(best_loudness.test.predict[,1], start = 1921+nTrain+1, end = 2020), col
 
 <br />
 
-### Predict features for the overall market trends for the next five years.
+### Predict features for the overall market trends for the next five years
 Only including features whose trained linear models had a MAPE below 10%, as these are the features whose most popular medians will be most reliably predicted by their forecast overall values. \n
 Using the best timeseries method seen for each feature.
 
@@ -1195,7 +1203,7 @@ lines(loudness)
 
 
 
-### Now predicting the median values for the *most popular songs* for this set of features.
+### Now, we predict the median values for the *most popular songs* for this set of features
 The forecast overall median values and linear model predicting the most popular median values for each feature given overall median value will be used to predict the future median values for popular songs for each feature.
 
 <br />
@@ -1358,6 +1366,7 @@ predict_set <- fastDummies::dummy_cols(predict_set,select_columns = "key", remov
 predict_set = select(predict_set, -c(key,key_val))
 head(predict_set)
 ```
+<br />
 
 #### Split into training and prediction set (80/20 split)
 
@@ -1381,6 +1390,7 @@ nrow(predict_set.test)
 glimpse(predict_set.train)
 summary(predict_set.train)
 ```
+<br />
 
 #### Train a Multiple Linear Regression Model to predict popularity
 ```{r}
@@ -1407,7 +1417,7 @@ MASE: Note that Mean Absolute Scaled Error (MASE) is used instead of MAPE since 
 ##### Insights:
 - From this regression, it seems like year, speechiness, explicitness, danceability, valence, liveness, and instrumentalness are significant predictors of popularity, judging by their t-stats and p-values. 
 - However, there remains a lot of regressors that are insignificant predictors of popularity (e.g. key_3, key_10, key_7, tempo).
-- Furthermore, the RMSE suggests that the model is capable or predicting popularity within +/- 9 points of error (remember that popularity is contained within a scale of 0-100. MAE suggests that this error is ~ +/- 7 points. This is still a significant deviation from the correct popularity value. \n
+- Furthermore, the RMSE (9.019) suggests that the model is capable of predicting popularity within +/- 9 points of error (remember that popularity is contained within a scale of 0-100. MAE suggests that this error is ~ +/- 7 points. The difference between MAE and RMSE suggests that there is some variation in the magnitude of the errors, since RMSE penalizes large errors more than MAE. Nevertheless, these errors still signify that this model predicts popularity with a significant deviation from the correct popularity value. \n
 
 
 #### Train a Random Forests Model to predict popularity
@@ -1455,13 +1465,13 @@ paste("MASE:",Metrics::mase(predict_set.test$popularity, predictions.rf))
 varImpPlot(predict_set.rf_train,main="Feature Importance of Random Forests Model")
 ```
 ##### Insights:
-This random forests model has a relatively small error with an RMSE of 8.45 and an MAE of 6.58, but we recognize the following issues: \n
+This random forests model has a relatively small error with an RMSE of 8.53 and an MAE of 6.58, but we recognize the following issues: \n
 
 - A Low 47.53% of Variance Explained (usually, at least 60%+ is considered a good threshold) implies that there are other factors that influence music popularity, and these factors were not captured in the data. This may mean that the features in the dataset do not fully describe the factors that influence music popularity. \n
 
 - From the features explanations plot, a large portion of the popularity prediction is dependent on year. This can be seen in the trend where the mean popularity of songs increases as the year increases. 
 
-
+<br />
 
 #### Train a Gradient Boosting Model to predict popularity
 
@@ -1517,7 +1527,9 @@ xgb.plot.importance(importance_matrix[1:10,])
 ##### Insights: 
 Since fitting a random forest model was promising for popularity prediction, we try to fit a Gradient Boosting Model as a similar decision-tree based model, but with a potentially better fit. Gradient Boosting is a set of decision trees that are built in an additive (ensemble-like) manner, by introducing weak learners to improve the shortcomings of existing weak learners. Gradient boosting is also done in a sequential manner, by combining results along the way. However, this makes it easy to overfit a Gradient Boosting model, and we have done various tuning of the parameters to avoid overfitting. \n
 
-- With RMSE at 8.45 and MAE at 6.61, this gradient boosting model was not able to improve upon the the previous random forests model. \n
+- The RMSE of the last training iteration of the model was 8.21, and the test RMSE was 8.60; this suggests that the model was not excessively overfit. \n
+
+- With RMSE at 8.60 and MAE at 6.57, this gradient boosting model was not able to improve upon the the previous random forests model. \n
 
 - Looking at the popularity predictions against the test set popularity plot, it seems like the model does poorly at predicting the songs at the extremes of the popularity scale over time. \n
 
@@ -1548,6 +1560,8 @@ Use the best model (leader model) to predict on the test set.
 ```{r}
 predictions <- h2o.predict(h2o_train.aml@leader, predict_set.h2o_test)
 ```
+<br />
+
 Get details about the most accurate model. 
 ```{r}
 h2o_train.aml@leader
@@ -1571,7 +1585,7 @@ perf_df
 
 ```
 ##### Insights:
-After training up to 30 models using an AutoML library that searches for optimal model architectures and tunes model hyperparameters, the best leaderboard model was only able to slightly improve forecasting accuracy (RMSE at 8.44, MAE at 6.56). The best performing model was a complex stacked ensemble model comprised of 5 base models (1 deep learning model, 2 distributed random forests, 1 gradient boosting model, and 1 generalized linear model). Looking at the performance metric leaderboard on the test set, the low r2 of these models (47.67% for the most accurate model) implies that the given independent variables are still, in aggregate a poor predictor of popularity. In other words, these independent variables do not seem to capture the entire variance of popularity, and thus there may be other predictors of song popularity that are not captured within the dataset (i.e. frequency of the song's appearance in Twitter tweets). 
+After training up to 30 models using an AutoML library that searches for optimal model architectures and tunes model hyperparameters, the best leaderboard model was only able to slightly improve forecasting accuracy (RMSE at 8.51, MAE at 6.54). The best performing model was a complex stacked ensemble model comprised of 5 base models (1 deep learning model, 2 distributed random forests, 1 gradient boosting model, and 1 generalized linear model). Looking at the performance metric leaderboard on the test set, the low r2 of these models (46.66% for the most accurate model) implies that the given independent variables are still, in aggregate a poor predictor of popularity. In other words, these independent variables do not seem to capture the entire variance of popularity, and thus there may be other predictors of song popularity that are not captured within the dataset (i.e. frequency of the song's appearance in Twitter tweets). 
 
 <br />
 
@@ -1583,10 +1597,10 @@ Using these values above for the predicted median value for the most popular son
 
 
 ##### Predicting Song Popularity: 
-Based on our chosen error metrics for model selection (RMSE, MAE, MASE), the best model that minimized these error metrics on the testing set was the Stacked Ensemble model trained via AutoML (RMSE: 8.44, MAE: 6.56). Our random forests model came at a close second with RMSE: 8.45, MAE: 6.58, followed by our gradient boosting model with RMSE: 8.54 and MAE: 6.61. Finally, our multiple linear regression model had RMSE: 8.98 and MAE: 6.98. \n
+Based on our chosen error metrics for model selection (RMSE, MAE, MASE), the best model that minimized these error metrics on the testing set was the Stacked Ensemble model trained via AutoML, with RMSE: 8.51 and MAE: 6.54. Our random forests model came at a close second with RMSE: 8.54, MAE: 6.58, followed by our gradient boosting model with RMSE: 8.60 and MAE: 6.57. Finally, our multiple linear regression model had RMSE: 9.02 and MAE: 6.93. \n
 
 \n
-The significance in the error metrics improvement from the linear model to the random forests model suggests that we were able to capture some significant non-linearities in the data. Nevertheless, despite the complexity of the Stacked Ensemble model, the improvement in prediction accuracy was minimal when compared to the random forests model. This suggests that the independent variables in the data do not fully capture the variance expressed in the dependent popularity variable. From the t-stat of the linear model and the feature importance plot of both the random forests and gradient boosting model, it was observed that year was by far the most significant factor used to explain popularity, which was seen as the average popularity of any song was highly correlated to the recency of the song's release date. Moreover, the low r2 in the leaderboard of the AutoML models and the 47% variance explained in the random forests model supports the fact that the independent variables used do not fully explain the popularity of a song. To further improve this prediction accuracy, we would suggest looking into alternative datasets (e.g. Twitter/Instagram mentions of a given song name) to supplement this dataset and potentially improve prediction accuracy. Finally, predicting song popularity to a very precise extent may be inherently difficult because of the various human influences/factors that dictates the popularity of any given song. Nonetheless, we have built a very strong foundation for predicting song popularity and have learned many lessons along the way.
+The significance in the error metrics improvement from the linear model to the random forests model suggests that we were able to capture some significant non-linearities in the data. Nevertheless, despite the complexity of the Stacked Ensemble model, the improvement in prediction accuracy was minimal when compared to the random forests model. This suggests that the independent variables in the data do not fully capture the variance expressed in the dependent popularity variable. From the t-stat of the linear model and the feature importance plot of both the random forests and gradient boosting model, it was observed that year was by far the most significant factor used to explain popularity, which was observed as the average popularity of any song was highly correlated to the recency of the song's release date. Moreover, the low r2 in the leaderboard of the AutoML models and the 47% variance explained in the random forests model supports the fact that the independent variables used do not fully explain the popularity of a song. To further improve this prediction accuracy, we would suggest looking into alternative datasets (e.g. Twitter/Instagram mentions of a given song name) to supplement this dataset and potentially improve prediction accuracy. Finally, predicting song popularity to a very precise extent may be inherently difficult because of the various human influences/factors that dictates the popularity of any given song. Nonetheless, we have built a very strong foundation for predicting song popularity and have learned many lessons along the way.
 \n
 
 
