@@ -804,6 +804,63 @@ The significance in the error metrics improvement from the linear model to the r
 
 
 
+#### Train a multilayer perceptron (a type of feedforward artificial neural network) for each feature in the dataset (grouped by year).
+
+Prepare the dataset for training
+```{r}
+
+# Take all relevant features from the yearly dataset 
+df_year.train = df_year %>% select(-c("mode", "key"))
+head(df_year.train)
+
+# Create a function to take a data frame and transform it into a ts object, and then train an MLP NN with that ts object
+train_mlp <- function(arg){
+df_year.ts = ts(arg, start = start, end = end, frequency = 1)
+df_year.nn <- mlp(y = df_year.ts)
+
+return(df_year.nn)
+}
+```
+
+Train an MLP model for each feature
+```{r}
+
+for (i in 2:length(colnames(df_year.train))){
+  col = colnames(df_year.train)[i]
+  print(paste0("Training Model for: ", col))
+  model = train_mlp(df_year.train%>% select(col))
+  model.forecast = forecast(model, h=12)
+  
+  assign(paste("df_year.", col,".model", sep=""),model)
+  assign(paste("df_year.", col,".forecast", sep=""),model.forecast)
+  
+  # Print Model results and plot the model architecture
+  print(model)
+  plot(model)
+}
+
+```
+
+
+```{r}
+# Plot all forecasts
+colnames(df_year)
+autoplot(df_year.acousticness.forecast, ylab = "acousticness")
+autoplot(df_year.danceability.forecast, ylab = "danceability")
+autoplot(df_year.duration_ms.forecast, ylab = "duration_ms")
+autoplot(df_year.energy.forecast, ylab = "energy")
+autoplot(df_year.instrumentalness.forecast, ylab = "instrumentalness")
+autoplot(df_year.liveness.forecast, ylab = "liveness")
+autoplot(df_year.loudness.forecast, ylab = "loudness")
+autoplot(df_year.speechiness.forecast, ylab = "speechiness")
+autoplot(df_year.tempo.forecast, ylab = "tempo")
+autoplot(df_year.valence.forecast, ylab = "valence")
+autoplot(df_year.popularity.forecast, ylab = "popularity")
+autoplot(df_year.key.forecast, ylab = "key")
+
+```
+
+
 
 
 
